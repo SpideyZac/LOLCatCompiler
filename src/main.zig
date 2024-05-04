@@ -5,7 +5,8 @@
 
 const std = @import("std");
 
-const types = @import("lib/compiler/types.zig");
+const lexer = @import("lib/lexer/lexer.zig");
+const types = @import("lib/interpreter/types.zig");
 
 const allocator = std.heap.page_allocator;
 
