@@ -1,0 +1,26 @@
+BTW test program implementation
+BTW ---------------------------
+
+HAI 0.0.0
+I HAS A y ITZ [1, 2, 3, 4, 5]
+I HAS A x ITZ LIEK A y
+
+VISIBLE y
+VISIBLE x
+
+OBTW 
+  https://esolangs.org/wiki/LOLCODE
+
+  6 types:
+  YARN (string)
+  NUMBER (integer)
+  NUMBAR (float)
+  TROOF (boolean)
+  BUKKIT (array)
+  NOOB (void)
+
+  Functions:
+  HOW IZ I (function name) (YR argument1 AN YR argument 2 ...) code IF U SAY SO
+  FOUND YR [expression] returns value
+  GTFO return without value (NOOB)
+TLDR
