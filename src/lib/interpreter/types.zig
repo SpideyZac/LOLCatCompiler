@@ -6,7 +6,6 @@ pub const ValuesTags = enum {
     numbar,
     troof,
     noob,
-    bukkit,
 };
 
 pub const Values = union(ValuesTags) {
