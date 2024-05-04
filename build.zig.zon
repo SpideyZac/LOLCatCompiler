@@ -15,10 +15,7 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity. zig fetch --save (tar)
     .dependencies = .{
-        .regex = .{
-            .url = "https://github.com/tiehuis/zig-regex/archive/825181369f30bc0d0554d9d330d34db4162b91e5.tar.gz",
-            .hash = "122090c3c6b4a8745fb22e721ae4e2e55b73347769696fd84170c660fe16c1f062e6",
-        },
+        
     },
     .paths = .{
         // This makes *all* files, recursively, included in this package. It is generally

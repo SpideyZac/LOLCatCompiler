@@ -11,14 +11,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const regex = b.dependency("regex", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const module = regex.module("regex");
-    
-    exe.root_module.addImport("regex", module);
-
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
