@@ -12,13 +12,4 @@ const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     std.log.info("hello from tempLang!", .{});
-
-    var b = types.Bukkit{
-        .values = std.ArrayList(types.Values).init(allocator),
-    };
-
-    try b.values.append(types.Values{ .yarn = std.ArrayList(u8).init(allocator) });
-    try b.values.items[0].yarn.appendSlice("asd");
-    std.log.info("b.values[0].yarn: {s}", .{b.values.items[0].yarn.items});
-    defer b.deinit();
 }
