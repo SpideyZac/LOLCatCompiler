@@ -1,6 +1,16 @@
 const std = @import("std");
 const Token = @import("tokens.zig").Token;
 
+const LexedToken = struct {
+    token: Token,
+    start: usize,
+    end: usize,
+
+    pub fn to_name(self: LexedToken) []const u8 {
+        return self.token.to_name();
+    }
+};
+
 fn is_int(ch: u8) bool {
     return std.ascii.isDigit(ch);
 }
@@ -63,8 +73,9 @@ pub const Lexer = struct {
         }
     }
 
-    pub fn next_token(self: *Self) Token {
+    pub fn next_token(self: *Self) LexedToken {
         self.skip_whitespace();
+        const start = self.pos;
 
         const token: Token = switch (self.curr_ch) {
             '0'...'9' => self.read_number(),
@@ -73,7 +84,9 @@ pub const Lexer = struct {
             else => .illegal,
         };
 
+        const end = self.read_pos;
         self.read_ch();
-        return token;
+
+        return LexedToken{ .token = token, .start = start, .end = end };
     }
 };
