@@ -73,6 +73,22 @@ pub const Lexer = struct {
         }
     }
 
+    fn la(self: *Self, t: []const u8) bool {
+        if (self.read_pos + t.len > self.src.len) return false;
+        var success = false;
+        if (std.mem.eql(u8, t, self.src[self.read_pos..(self.read_pos + t.len)])) {
+            success = true;
+        }
+
+        if (success) {
+            for (0..t.len) |_| {
+                self.read_ch();
+            }
+        }
+
+        return success;
+    }
+
     pub fn next_token(self: *Self) LexedToken {
         self.skip_whitespace();
         const start = self.pos;
