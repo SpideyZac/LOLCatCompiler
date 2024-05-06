@@ -189,7 +189,14 @@ pub const Lexer = struct {
         defer tokens.deinit();
 
         while (self.curr_ch != 0) {
-            try tokens.append(self.next_token());
+            const token = self.next_token();
+            switch (token.token) {
+                .singleLineComment => {},
+                .multiLineComment => {},
+                else => {
+                    try tokens.append(token);
+                },
+            }
         }
         try tokens.append(self.next_token());
 
