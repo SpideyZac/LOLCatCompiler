@@ -12,7 +12,7 @@ const lexer = @import("lib/lexer/lexer.zig");
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
-    const source = "123 1.02";
+    const source = "123";
     var l = lexer.Lexer.init(source);
     var t = l.next_token();
     while (!std.mem.eql(u8, t.to_name(), "eof")) {

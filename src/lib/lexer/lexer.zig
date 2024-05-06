@@ -15,6 +15,10 @@ fn is_int(ch: u8) bool {
     return std.ascii.isDigit(ch);
 }
 
+fn is_char(ch: u8) bool {
+    return std.ascii.isAlphanumeric(ch) or ch == '_';
+}
+
 pub const Lexer = struct {
     const Self = @This();
 
@@ -61,9 +65,43 @@ pub const Lexer = struct {
         }
 
         if (is_float) {
-            return Token{ .numbar = self.src[start_pos..self.read_pos] };
+            return Token{ .numbarValue = self.src[start_pos..self.read_pos] };
         }
-        return Token{ .number = self.src[start_pos..self.read_pos] };
+        return Token{ .numberValue = self.src[start_pos..self.read_pos] };
+    }
+
+    fn read_identifier(self: *Self) []const u8 {
+        const start_pos = self.pos;
+
+        while (is_char(self.peak_ch()) or is_int(self.peak_ch())) {
+            self.read_ch();
+        }
+
+        return self.src[start_pos..self.read_pos];
+    }
+
+    fn read_string(self: *Self) !Token {
+        self.read_ch();
+        var ignore = false;
+
+        var stringArray = std.ArrayList(u8).init(std.heap.page_allocator);
+        defer stringArray.deinit();
+
+        while ((self.curr_ch != '"' or ignore) and self.curr_ch != 0) {
+            if (self.curr_ch == ':' and !ignore) {
+                ignore = true;
+            } else {
+                ignore = false;
+                try stringArray.append(self.curr_ch);
+            }
+            self.read_ch();
+        }
+
+        if (self.curr_ch == 0) {
+            return .illegal;
+        }
+
+        return Token { .string = try stringArray.toOwnedSlice() };
     }
 
     fn skip_whitespace(self: *Self) void {
@@ -95,6 +133,9 @@ pub const Lexer = struct {
 
         const token: Token = switch (self.curr_ch) {
             '0'...'9' => self.read_number(),
+            '-' => if (is_int(self.peak_ch())) self.read_number() else .illegal,
+            'A'...'Z', 'a'...'z', '_' => Token.parse_word(self.read_identifier()),
+            '"' => self.read_string() catch .illegal,
 
             0 => .eof,
             else => .illegal,
