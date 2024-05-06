@@ -1,23 +1,40 @@
-BTW test program implementation
-BTW ---------------------------
+HAI 1.2
+  HOW IZ I CALCULATE_FACTORIAL YR FACT_NUMBER AN YR RESULT
+    DIFFRINT FACT_NUMBER AN BIGGR OF FACT_NUMBER AN 2, O RLY?
+      YA RLY, FOUND YR RESULT
+    OIC
+  
+    I HAS A NEW_FACT_NUMBER
+    I HAS A NEW_RESULT
+  
+    NEW_FACT_NUMBER R DIFF OF FACT_NUMBER AN 1
+    NEW_RESULT R PRODUKT OF RESULT AN FACT_NUMBER
+  
+    FOUND YR I IZ CALCULATE_FACTORIAL YR NEW_FACT_NUMBER AN YR NEW_RESULT MKAY
+  IF U SAY SO
+  
+  I HAS A FACT_NUMBER
+  
+  VISIBLE "GIMME YER NUMBER:"
+  GIMMEH FACT_NUMBER
+  
+  FACT_NUMBER IS NOW A NUMBR
+   
+  VISIBLE "YER RESULT " I IZ CALCULATE_FACTORIAL YR FACT_NUMBER AN YR 1 MKAY
+KTHXBYE
 
-HAI 0.0.0
-I HAS A y ITZ [1, 2, 3, 4, 5]
-I HAS A x ITZ LIEK A y
-
-VISIBLE y
-VISIBLE x
-
-OBTW 
+OBTW RESOURCES
+  https://www.tutorialspoint.com/lolcode/index.htm
   https://esolangs.org/wiki/LOLCODE
+  https://github.com/justinmeza/lolcode-spec
 
-  6 types:
-  YARN (string)
-  NUMBER (integer)
-  NUMBAR (float)
-  TROOF (boolean)
-  BUKKIT (array)
-  NOOB (void)
+  types:
+    NUMBER int
+    NUMBAR float
+    YARN string
+    TROOF boolean
+    BUKKIT array
+    NOOB untyped
 
   Functions:
   HOW IZ I (function name) (YR argument1 AN YR argument 2 ...) code IF U SAY SO
