@@ -19,6 +19,10 @@ fn is_char(ch: u8) bool {
     return std.ascii.isAlphanumeric(ch) or ch == '_';
 }
 
+fn is_newline(ch: u8) bool {
+    return ch == '\n' or ch == '\r';
+}
+
 pub const Lexer = struct {
     const Self = @This();
 
@@ -87,7 +91,7 @@ pub const Lexer = struct {
         var stringArray = std.ArrayList(u8).init(std.heap.page_allocator);
         defer stringArray.deinit();
 
-        while ((self.curr_ch != '"' or ignore) and self.curr_ch != 0) {
+        while ((self.curr_ch != '"' or ignore) and !is_newline(self.curr_ch) and self.curr_ch != 0) {
             if (self.curr_ch == ':' and !ignore) {
                 ignore = true;
             } else {
@@ -101,12 +105,38 @@ pub const Lexer = struct {
             return .illegal;
         }
 
-        return Token { .string = try stringArray.toOwnedSlice() };
+        return Token{ .string = try stringArray.toOwnedSlice() };
+    }
+
+    fn read_multiline(self: *Self) !Token {
+        var commentContents = std.ArrayList(u8).init(std.heap.page_allocator);
+        defer commentContents.deinit();
+
+        while (self.curr_ch != 0) {
+            if (self.la("TLDR")) {
+                break;
+            }
+
+            try commentContents.append(self.curr_ch);
+            self.read_ch();
+        }
+
+        if (self.curr_ch == 0) {
+            return .illegal;
+        }
+        return Token{ .multiLineComment = try commentContents.toOwnedSlice() };
     }
 
     fn skip_whitespace(self: *Self) void {
         const l = self;
-        while (l.curr_ch == ' ' or l.curr_ch == '\t' or l.curr_ch == '\n' or l.curr_ch == '\r') {
+        while (l.curr_ch == ' ' or l.curr_ch == '\t' or is_newline(l.curr_ch)) {
+            self.read_ch();
+        }
+    }
+
+    fn skip_single_comment(self: *Self) void {
+        const l = self;
+        while (!is_newline(l.curr_ch) and l.curr_ch != 0) {
             self.read_ch();
         }
     }
@@ -134,16 +164,35 @@ pub const Lexer = struct {
         const token: Token = switch (self.curr_ch) {
             '0'...'9' => self.read_number(),
             '-' => if (is_int(self.peak_ch())) self.read_number() else .illegal,
-            'A'...'Z', 'a'...'z', '_' => Token.parse_word(self.read_identifier()),
+            'A'...'Z', 'a'...'z', '_' => if (self.curr_ch == 'O' and self.la("BTW")) self.read_multiline() catch .illegal else Token.parse_word(self.read_identifier()),
             '"' => self.read_string() catch .illegal,
 
             0 => .eof,
             else => .illegal,
         };
 
+        switch (token) {
+            .singleLineComment => {
+                self.skip_single_comment();
+            },
+            else => {},
+        }
+
         const end = self.read_pos;
         self.read_ch();
 
         return LexedToken{ .token = token, .start = start, .end = end };
+    }
+
+    pub fn get_tokens(self: *Self) ![]LexedToken {
+        var tokens = std.ArrayList(LexedToken).init(std.heap.page_allocator);
+        defer tokens.deinit();
+
+        while (self.curr_ch != 0) {
+            try tokens.append(self.next_token());
+        }
+        try tokens.append(self.next_token());
+
+        return tokens.toOwnedSlice();
     }
 };

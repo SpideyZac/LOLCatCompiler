@@ -10,6 +10,9 @@ pub const Token = union(enum) {
     troof,
     yarn,
 
+    singleLineComment,
+    multiLineComment: []const u8,
+
     numberValue: []const u8,
     numbarValue: []const u8,
     string: []const u8,
@@ -33,6 +36,8 @@ pub const Token = union(enum) {
             return .number;
         } else if (std.mem.eql(u8, word, "NUMBAR")) {
             return .numbar;
+        } else if (std.mem.eql(u8, word, "BTW")) {
+            return .singleLineComment;
         } else {
             return Token{ .identifier = word };
         }
@@ -48,6 +53,9 @@ pub const Token = union(enum) {
             .noob => "noob",
             .troof => "troof",
             .yarn => "yarn",
+
+            .singleLineComment => "singleLineComment",
+            .multiLineComment => "multiLineComment",
 
             .numberValue => "numberValue",
             .numbarValue => "numbarValue",

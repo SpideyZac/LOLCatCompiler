@@ -12,13 +12,10 @@ const lexer = @import("lib/lexer/lexer.zig");
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
-    const source = "123";
+    const source = "123 123.01 OBTW this\nis\na\ncomment TLDR\nTROOF";
     var l = lexer.Lexer.init(source);
-    var t = l.next_token();
-    while (!std.mem.eql(u8, t.to_name(), "eof")) {
-        std.log.info("{s} {}", .{t.to_name(), t});
-        t = l.next_token();
+    const t = try l.get_tokens();
+    for (t) |token| {
+        std.log.info("token: {s} {}", .{ token.to_name(), token });
     }
-
-    std.log.info("hello from tempLang!", .{});
 }
