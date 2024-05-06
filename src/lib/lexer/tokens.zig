@@ -40,6 +40,12 @@ pub const Token = union(enum) {
             return .numbar;
         } else if (std.mem.eql(u8, word, "BTW")) {
             return .singleLineComment;
+        } else if (std.mem.eql(u8, word, "I")) {
+            return .variableDeclaration;
+        } else if (std.mem.eql(u8, word, "HAS")) {
+            return .variableDeclaration;
+        } else if (std.mem.eql(u8, word, "A")) {
+            return .variableDeclaration;
         } else {
             return Token{ .identifier = word };
         }
