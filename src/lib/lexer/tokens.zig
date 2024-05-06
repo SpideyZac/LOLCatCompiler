@@ -10,6 +10,8 @@ pub const Token = union(enum) {
     troof,
     yarn,
 
+    comma,
+
     singleLineComment,
     multiLineComment: []const u8,
 
@@ -53,6 +55,8 @@ pub const Token = union(enum) {
             .noob => "noob",
             .troof => "troof",
             .yarn => "yarn",
+
+            .comma => "comma",
 
             .singleLineComment => "singleLineComment",
             .multiLineComment => "multiLineComment",

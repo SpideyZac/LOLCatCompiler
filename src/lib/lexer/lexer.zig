@@ -166,6 +166,7 @@ pub const Lexer = struct {
             '-' => if (is_int(self.peak_ch())) self.read_number() else .illegal,
             'A'...'Z', 'a'...'z', '_' => if (self.curr_ch == 'O' and self.la("BTW")) self.read_multiline() catch .illegal else Token.parse_word(self.read_identifier()),
             '"' => self.read_string() catch .illegal,
+            ',' => .comma,
 
             0 => .eof,
             else => .illegal,
