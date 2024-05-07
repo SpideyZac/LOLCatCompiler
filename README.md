@@ -1,3 +1,3 @@
 # LOLCatCompiler
 
-(tbd)
+A simple & performant LOLCode compiler written in Zig.
