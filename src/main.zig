@@ -1,28 +1,47 @@
 const std = @import("std");
 
-const types = @import("lib/compiler/types.zig");
-const tokens = @import("lib/lexer/tokens.zig");
-const lexer = @import("lib/lexer/lexer.zig");
-const parser = @import("lib/parser/parser.zig");
-
-const allocator = std.heap.page_allocator;
+const Lexer = @import("lib/lexer/lexer.zig").Lexer;
+const Parser = @import("lib/parser/parser.zig").Parser;
 
 pub fn main() !void {
-    const source = "123 123.01 OBTW this\nis\na\ncomment TLDR\nTROOF";
-    var l = lexer.Lexer.init(source);
-    const t = try l.get_tokens();
-    for (t) |token| {
-        std.log.info("token: {s} {}", .{ token.to_name(), token });
-    }
-    const hasErrors = lexer.Lexer.has_errors(t);
-    std.log.info("Has errors: {}", .{hasErrors});
-    if (hasErrors) {
-        std.log.info("Error: {s}", .{lexer.Lexer.get_first_error(t).illegal.to_string()});
+    // Read File Passed as Argument
+    const args = try std.process.argsAlloc(std.heap.page_allocator);
+    defer std.process.argsFree(
+        std.heap.page_allocator,
+        args,
+    );
+
+    const contents = try std.fs.cwd().readFileAlloc(
+        std.heap.page_allocator,
+        args[1],
+        std.math.maxInt(usize),
+    );
+    defer std.heap.page_allocator.free(contents);
+
+    // Initalize Lexer on Contents
+    var lexer = Lexer.init(contents);
+    const tokens = try lexer.get_tokens();
+
+    for (tokens) |token| {
+        std.debug.print(
+            "{s} {}\n",
+            .{ token.to_name(), token },
+        );
     }
 
-    const p = try parser.Parser.parse(t);
-    std.log.info("{any}", .{p.statements});
-    for (p.errors) |e| {
-        std.log.info("Error: {s}", .{e.message});
+    const hasErrors = Lexer.has_errors(tokens);
+    if (hasErrors) {
+        std.log.err(
+            "{s}\n",
+            .{Lexer.get_first_error(tokens).illegal.to_string()},
+        );
+    }
+
+    // Initalize Parser on Tokens
+    const parser = try Parser.parse(tokens);
+    std.log.info("{any}", .{parser.statements});
+
+    for (parser.errors) |e| {
+        std.log.err("{s}", .{e.message});
     }
 }
