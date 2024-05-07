@@ -2,7 +2,7 @@ const std = @import("std");
 const Token = @import("tokens.zig").Token;
 const Errors = @import("tokens.zig").Errors;
 
-const LexedToken = struct {
+pub const LexedToken = struct {
     token: Token,
     start: usize,
     end: usize,
