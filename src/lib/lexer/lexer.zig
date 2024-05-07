@@ -1,5 +1,6 @@
 const std = @import("std");
 const Token = @import("tokens.zig").Token;
+const Errors = @import("tokens.zig").Errors;
 
 const LexedToken = struct {
     token: Token,
@@ -102,7 +103,7 @@ pub const Lexer = struct {
         }
 
         if (self.curr_ch == 0) {
-            return .illegal;
+            return Token{ .illegal = Errors.UnterminatedString };
         }
 
         return Token{ .string = try stringArray.toOwnedSlice() };
@@ -122,7 +123,7 @@ pub const Lexer = struct {
         }
 
         if (self.curr_ch == 0) {
-            return .illegal;
+            return Token{ .illegal = Errors.UnterminatedMultiLineComment };
         }
         return Token{ .multiLineComment = try commentContents.toOwnedSlice() };
     }
@@ -163,13 +164,15 @@ pub const Lexer = struct {
 
         const token: Token = switch (self.curr_ch) {
             '0'...'9' => self.read_number(),
-            '-' => if (is_int(self.peak_ch())) self.read_number() else .illegal,
-            'A'...'Z', 'a'...'z', '_' => if (self.curr_ch == 'O' and self.la("BTW")) self.read_multiline() catch .illegal else Token.parse_word(self.read_identifier()),
-            '"' => self.read_string() catch .illegal,
+            '-' => if (is_int(self.peak_ch())) self.read_number() else Token{ .illegal = Errors.UnexpectedToken },
+            'A'...'Z', 'a'...'z', '_' => if (self.curr_ch == 'O' and self.la("BTW")) self.read_multiline() catch Token{ .illegal = Errors.CompilerError } else Token.parse_word(self.read_identifier()),
+            '"' => self.read_string() catch Token{ .illegal = Errors.CompilerError },
             ',' => .comma,
+            '!' => .exclamationMark,
+            '?' => .questionMark,
 
             0 => .eof,
-            else => .illegal,
+            else => Token{ .illegal = Errors.UnexpectedToken },
         };
 
         switch (token) {
@@ -202,5 +205,27 @@ pub const Lexer = struct {
         try tokens.append(self.next_token());
 
         return tokens.toOwnedSlice();
+    }
+
+    pub fn has_errors(tokens: []LexedToken) bool {
+        for (tokens) |t| {
+            switch (t.token) {
+                .illegal => return true,
+                else => {},
+            }
+        }
+
+        return false;
+    }
+
+    pub fn get_first_error(tokens: []LexedToken) Token {
+        for (tokens) |t| {
+            switch (t.token) {
+                .illegal => return t.token,
+                else => {},
+            }
+        }
+
+        return .eof;
     }
 };
