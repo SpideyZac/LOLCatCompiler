@@ -3,9 +3,13 @@ const std = @import("std");
 const tokens = @import("../lexer/tokens.zig");
 const lexer = @import("../lexer/lexer.zig");
 
-pub const ParerError = struct {
+pub const ParserError = struct {
     message: []const u8,
     token: lexer.LexedToken,
+};
+
+const IntermediateParserError = error {
+    ConsumeTokenError,
 };
 
 pub const ReturnTypes = union(enum) {
@@ -14,7 +18,7 @@ pub const ReturnTypes = union(enum) {
 
 pub const MainReturn = struct {
     statements: []ReturnTypes,
-    errors: []ParerError,
+    errors: []ParserError,
 };
 
 pub const Parser = struct {
@@ -22,7 +26,7 @@ pub const Parser = struct {
 
     tokens: []lexer.LexedToken,
     current: usize,
-    errors: std.ArrayList(ParerError),
+    errors: std.ArrayList(ParserError),
 
     pub fn parse(t: []lexer.LexedToken) !MainReturn {
         var statements = std.ArrayList(ReturnTypes).init(std.heap.page_allocator);
@@ -31,7 +35,7 @@ pub const Parser = struct {
         var p = Self{
             .tokens = t,
             .current = 0,
-            .errors = std.ArrayList(ParerError).init(std.heap.page_allocator),
+            .errors = std.ArrayList(ParserError).init(std.heap.page_allocator),
         };
         defer p.errors.deinit();
 
@@ -69,10 +73,9 @@ pub const Parser = struct {
         };
     }
 
-    pub fn consume(self: *Self, token: tokens.Token) lexer.LexedToken {
+    pub fn consume(self: *Self, token: tokens.Token) IntermediateParserError!lexer.LexedToken {
         if (self.check(token)) return self.advance();
-        std.log.err("Expected token {s}", .{token.to_name()});
-        std.process.exit(1);
+        return IntermediateParserError.ConsumeTokenError;
     }
 
     pub fn previous(self: *Self) lexer.LexedToken {
