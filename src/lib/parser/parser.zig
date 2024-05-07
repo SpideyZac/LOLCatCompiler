@@ -8,7 +8,7 @@ pub const ParserError = struct {
     token: lexer.LexedToken,
 };
 
-const IntermediateParserError = error {
+const IntermediateParserError = error{
     ConsumeTokenError,
 };
 
@@ -54,7 +54,7 @@ pub const Parser = struct {
         return switch (self.peek().token) {
             .eof => null,
             else => {
-                try self.errors.append(ParerError{
+                try self.errors.append(ParserError{
                     .message = "Unexpected token",
                     .token = self.peek(),
                 });
