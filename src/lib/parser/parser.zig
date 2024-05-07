@@ -2,22 +2,25 @@ const std = @import("std");
 
 const tokens = @import("../lexer/tokens.zig");
 const lexer = @import("../lexer/lexer.zig");
+const ast = @import("./ast.zig");
+
+const allocator = std.heap.page_allocator;
 
 pub const ParserError = struct {
     message: []const u8,
     token: lexer.LexedToken,
 };
 
-const IntermediateParserError = error{
+const IntermediateParserError = error {
     ConsumeTokenError,
+    AdvanceTokenError,
+
+    ParseStatementError,
+    ParseNumberValueError,
 };
 
-pub const ReturnTypes = union(enum) {
-    temp,
-};
-
-pub const MainReturn = struct {
-    statements: []ReturnTypes,
+pub const ParserReturn = struct {
+    program: ast.ProgramNode,
     errors: []ParserError,
 };
 
@@ -28,53 +31,62 @@ pub const Parser = struct {
     current: usize,
     errors: std.ArrayList(ParserError),
 
-    pub fn parse(t: []lexer.LexedToken) !MainReturn {
-        var statements = std.ArrayList(ReturnTypes).init(std.heap.page_allocator);
+    pub fn parse(t: []lexer.LexedToken) ParserReturn {
+        var parser = Self{ .tokens = t, .current = 0, .errors = std.ArrayList(ParserError).init(allocator) };
+        defer parser.errors.deinit();
+
+        const program = parser.parse_program();
+        return ParserReturn{ .program = program, .errors = parser.errors.toOwnedSlice() catch &[_]ParserError{} };
+    }
+
+    pub fn parse_program(self: *Self) ast.ProgramNode {
+        var statements = std.ArrayList(ast.StatementNode).init(allocator);
         defer statements.deinit();
 
-        var p = Self{
-            .tokens = t,
-            .current = 0,
-            .errors = std.ArrayList(ParserError).init(std.heap.page_allocator),
-        };
-        defer p.errors.deinit();
-
-        while (!p.isAtEnd()) {
-            const rt: ?ReturnTypes = try p.parseStatement();
-            if (rt == null) {
-                break;
+        while (!self.isAtEnd()) {
+            const parsed_statement = self.parse_statement() catch null;
+            if (parsed_statement == null) {
+                self.errors.append(ParserError{ .message = "Expected valid statement line", .token = self.peek() }) catch {};
+                return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
             }
-            try statements.append(rt.?);
+            statements.append(parsed_statement.?) catch {};
         }
 
-        return MainReturn{ .errors = try p.errors.toOwnedSlice(), .statements = try statements.toOwnedSlice() };
+        return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
     }
 
-    pub fn parseStatement(self: *Self) !?ReturnTypes {
-        return switch (self.peek().token) {
-            .eof => null,
-            else => {
-                try self.errors.append(ParserError{
-                    .message = "Unexpected token",
-                    .token = self.peek(),
-                });
-                return null;
-            },
-        };
-    }
-
-    pub fn check(self: *Self, token: tokens.Token) bool {
-        if (self.isAtEnd()) {
-            return false;
+    pub fn parse_statement(self: *Self) IntermediateParserError!ast.StatementNode {
+        const parsed_numbervalue = self.parse_numbervalue() catch null;
+        if (parsed_numbervalue != null) {
+            return ast.StatementNode{ .value = ast.AllNodes{ .NumberValue = parsed_numbervalue.? } };
         }
-        return switch (self.peek().token) {
-            token => true,
-            else => false,
-        };
+
+        self.errors.append(ParserError{ .message = "Expected valid statement or expression", .token = self.peek() }) catch {};
+        return IntermediateParserError.ParseStatementError;
     }
 
-    pub fn consume(self: *Self, token: tokens.Token) IntermediateParserError!lexer.LexedToken {
-        if (self.check(token)) return self.advance();
+    pub fn parse_numbervalue(self: *Self) IntermediateParserError!ast.NumberValueNode {
+        const token = self.consume("numberValue") catch null;
+        if (token == null) {
+            self.errors.append(ParserError{ .message = "Expected Number Value Token", .token = self.peek() }) catch {};
+            return IntermediateParserError.ParseNumberValueError;
+        }
+
+        return ast.NumberValueNode{ .token = token.? };
+    }
+
+    pub fn check(self: *Self, token: []const u8) bool {
+        if (std.mem.eql(u8, self.peek().token.to_name(), token)) {
+            return true;
+        }
+        return false;
+    }
+
+    pub fn consume(self: *Self, token: []const u8) IntermediateParserError!ast.TokenNode {
+        if (self.check(token)) {
+            _ = try self.advance();
+            return ast.TokenNode{ .token = self.previous() };
+        }
         return IntermediateParserError.ConsumeTokenError;
     }
 
@@ -86,22 +98,12 @@ pub const Parser = struct {
         return self.tokens[self.current];
     }
 
-    pub fn peekFuture(self: *Self, amount: usize) lexer.LexedToken {
-        return self.tokens[self.current + amount];
-    }
-
-    pub fn advance(self: *Self) lexer.LexedToken {
+    pub fn advance(self: *Self) IntermediateParserError!lexer.LexedToken {
         if (!self.isAtEnd()) {
             self.current += 1;
+            return self.peek();
         }
-        return self.previous();
-    }
-
-    pub fn advanceAmount(self: *Self, amount: usize) lexer.LexedToken {
-        if (!self.isAtEnd()) {
-            self.current += amount;
-        }
-        return self.previous();
+        return IntermediateParserError.AdvanceTokenError;
     }
 
     pub fn isAtEnd(self: *Self) bool {

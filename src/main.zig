@@ -5,18 +5,20 @@ const Parser = @import("lib/parser/parser.zig").Parser;
 
 pub fn main() !void {
     // Read File Passed as Argument
-    const args = try std.process.argsAlloc(std.heap.page_allocator);
-    defer std.process.argsFree(
-        std.heap.page_allocator,
-        args,
-    );
+    // const args = try std.process.argsAlloc(std.heap.page_allocator);
+    // defer std.process.argsFree(
+    //     std.heap.page_allocator,
+    //     args,
+    // );
 
-    const contents = try std.fs.cwd().readFileAlloc(
-        std.heap.page_allocator,
-        args[1],
-        std.math.maxInt(usize),
-    );
-    defer std.heap.page_allocator.free(contents);
+    // const contents = try std.fs.cwd().readFileAlloc(
+    //     std.heap.page_allocator,
+    //     args[1],
+    //     std.math.maxInt(usize),
+    // );
+    // defer std.heap.page_allocator.free(contents);
+
+    const contents = "1";
 
     // Initalize Lexer on Contents
     var lexer = Lexer.init(contents);
@@ -38,8 +40,8 @@ pub fn main() !void {
     }
 
     // Initalize Parser on Tokens
-    const parser = try Parser.parse(tokens);
-    std.log.info("{any}", .{parser.statements});
+    const parser = Parser.parse(tokens);
+    std.debug.print("{any}\n", .{parser.program.statements});
 
     for (parser.errors) |e| {
         std.log.err("{s}", .{e.message});
