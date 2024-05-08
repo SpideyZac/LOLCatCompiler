@@ -16,7 +16,9 @@ const IntermediateParserError = error{
     AdvanceTokenError,
 
     ParseStatementError,
+
     ParseNumberValueError,
+    ParseNumbarValueError,
 };
 
 pub const ParserReturn = struct {
@@ -93,7 +95,7 @@ pub const Parser = struct {
         const token = self.consume("numbarValue") catch null;
         if (token == null) {
             self.errors.append(ParserError{ .message = "Expected Numbar Value Token", .token = self.peek() }) catch {};
-            return IntermediateParserError.ParseNumberValueError;
+            return IntermediateParserError.ParseNumbarValueError;
         }
 
         return ast.NumbarValueNode{ .token = token.? };
