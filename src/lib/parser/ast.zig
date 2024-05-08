@@ -19,8 +19,14 @@ pub const ProgramNode = struct {
     }
 };
 
+pub const StatementNodeValueOption = union(enum) {
+    Token: TokenNode,
+    Program: ProgramNode,
+    NumberValue: NumberValueNode,
+};
+
 pub const StatementNode = struct {
-    value: AllNodes,
+    value: StatementNodeValueOption,
 
     pub fn value(self: *StatementNode) AllNodes {
         return self.value;
@@ -33,10 +39,4 @@ pub const NumberValueNode = struct {
     pub fn value(self: *NumberValueNode) i64 {
         return std.fmt.parseInt(i64, self.token.value().numberValue, 10) catch 0;
     }
-};
-
-pub const AllNodes = union(enum) {
-    Token: TokenNode,
-    Program: ProgramNode,
-    NumberValue: NumberValueNode,
 };
