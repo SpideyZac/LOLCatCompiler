@@ -19,6 +19,8 @@ const IntermediateParserError = error{
 
     ParseNumberValueError,
     ParseNumbarValueError,
+
+    ParseKTHXBYE_WordError,
 };
 
 pub const ParserReturn = struct {
@@ -52,6 +54,21 @@ pub const Parser = struct {
         var statements = std.ArrayList(ast.StatementNode).init(allocator);
         defer statements.deinit();
 
+        const hai = self.consume("word_hai") catch null;
+        if (hai == null) {
+            self.errors.append(ParserError{ .message = "Expected HAI to start program", .token = self.peek() }) catch {};
+            return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+        }
+        const version = self.parse_numbarvalue() catch null;
+        if (version == null) {
+            self.errors.append(ParserError{ .message = "Expected version number (of type NUMBAR)", .token = self.peek() }) catch {};
+            return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+        }
+        if (version.?.value() != 1.2) {
+            self.errors.append(ParserError{ .message = "Expected version number 1.2", .token = self.previous() }) catch {};
+            return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+        }
+
         while (!self.isAtEnd()) {
             const parsed_statement = self.parse_statement() catch null;
             if (parsed_statement == null) {
@@ -61,19 +78,34 @@ pub const Parser = struct {
             statements.append(parsed_statement.?) catch {};
         }
 
+        switch (statements.items[statements.items.len - 1].option) {
+            .KTHXBYE_Word => {},
+            else => {
+                self.errors.append(ParserError{ .message = "Expected KTHXBYE to end program", .token = self.previous() }) catch {};
+            },
+        }
+
         return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
     }
 
     pub fn parse_statement(self: *Self) IntermediateParserError!ast.StatementNode {
+        // TODO: move these to "expression" parsing
         if (self.check("numbarValue")) {
-            return ast.StatementNode{ .value = ast.StatementNodeValueOption{
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption{
                 .NumbarValue = try self.parse_numbarvalue(),
             } };
         }
 
         if (self.check("numberValue")) {
-            return ast.StatementNode{ .value = ast.StatementNodeValueOption{
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption{
                 .NumberValue = try self.parse_numbervalue(),
+            } };
+        }
+
+        // kthxbye can also be used to terminate a program so we don't remove it
+        if (self.check("word_kthxbye")) {
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption{
+                .KTHXBYE_Word = try self.parse_KTHXBYE_word(),
             } };
         }
 
@@ -99,6 +131,16 @@ pub const Parser = struct {
         }
 
         return ast.NumbarValueNode{ .token = token.? };
+    }
+
+    pub fn parse_KTHXBYE_word(self: *Self) IntermediateParserError!ast.KTHXBYE_WordNode {
+        const token = self.consume("word_kthxbye") catch null;
+        if (token == null) {
+            self.errors.append(ParserError{ .message = "Expected KTHXBYE Word Token", .token = self.peek() }) catch {};
+            return IntermediateParserError.ParseKTHXBYE_WordError;
+        }
+
+        return ast.KTHXBYE_WordNode{ .token = token.? };
     }
 
     pub fn check(self: *Self, token: []const u8) bool {

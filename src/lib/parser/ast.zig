@@ -6,7 +6,7 @@ const tokens = @import("../lexer/tokens.zig");
 pub const TokenNode = struct {
     token: lexer.LexedToken,
 
-    pub fn value(self: *TokenNode) tokens.Token {
+    pub fn value(self: *const TokenNode) tokens.Token {
         return self.token.token;
     }
 };
@@ -22,20 +22,21 @@ pub const ProgramNode = struct {
 pub const StatementNodeValueOption = union(enum) {
     NumberValue: NumberValueNode,
     NumbarValue: NumbarValueNode,
+    KTHXBYE_Word: KTHXBYE_WordNode,
 };
 
 pub const StatementNode = struct {
-    value: StatementNodeValueOption,
+    option: StatementNodeValueOption,
 
-    pub fn value(self: *StatementNode) StatementNodeValueOption {
-        return self.value;
+    pub fn value(self: *const StatementNode) StatementNodeValueOption {
+        return self.option;
     }
 };
 
 pub const NumberValueNode = struct {
     token: TokenNode,
 
-    pub fn value(self: *NumberValueNode) i64 {
+    pub fn value(self: *const NumberValueNode) i64 {
         return std.fmt.parseInt(i64, self.token.value().numberValue, 10) catch 0;
     }
 };
@@ -43,7 +44,15 @@ pub const NumberValueNode = struct {
 pub const NumbarValueNode = struct {
     token: TokenNode,
 
-    pub fn value(self: *NumbarValueNode) f64 {
+    pub fn value(self: *const NumbarValueNode) f64 {
         return std.fmt.parseFloat(f64, self.token.value().numbarValue) catch 0.0;
+    }
+};
+
+pub const KTHXBYE_WordNode = struct {
+    token: TokenNode,
+
+    pub fn value() void {
+        return;
     }
 };

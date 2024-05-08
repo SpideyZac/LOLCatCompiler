@@ -18,7 +18,7 @@ pub fn main() !void {
     // );
     // defer std.heap.page_allocator.free(contents);
 
-    const contents = "1.123 1";
+    const contents = "HAI 1.2\n1 1.23\nKTHXBYE";
 
     // Initalize Lexer on Contents
     var lexer = Lexer.init(contents);
