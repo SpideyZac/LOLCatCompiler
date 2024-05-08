@@ -58,7 +58,7 @@ pub const Parser = struct {
     pub fn parse_statement(self: *Self) IntermediateParserError!ast.StatementNode {
         const parsed_numbervalue = self.parse_numbervalue() catch null;
         if (parsed_numbervalue != null) {
-            return ast.StatementNode{ .value = ast.AllNodes{ .NumberValue = parsed_numbervalue.? } };
+            return ast.StatementNode{ .value = ast.StatementNodeValueOption{ .NumberValue = parsed_numbervalue.? } };
         }
 
         self.errors.append(ParserError{ .message = "Expected valid statement or expression", .token = self.peek() }) catch {};
