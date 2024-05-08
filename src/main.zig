@@ -18,17 +18,15 @@ pub fn main() !void {
     // );
     // defer std.heap.page_allocator.free(contents);
 
-    const contents = "1.123";
+    const contents = "1.123 1";
 
     // Initalize Lexer on Contents
     var lexer = Lexer.init(contents);
     const tokens = try lexer.get_tokens();
 
+    std.debug.print("Tokens:\n", .{});
     for (tokens) |token| {
-        std.debug.print(
-            "{s} {}\n",
-            .{ token.to_name(), token },
-        );
+        std.debug.print("{s}: {}\n", .{token.to_name(), std.json.fmt(token, .{ .whitespace = .indent_2 })});
     }
 
     const hasErrors = Lexer.has_errors(tokens);
@@ -40,8 +38,9 @@ pub fn main() !void {
     }
 
     // Initalize Parser on Tokens
+    std.debug.print("\n\n\nParser:\n", .{});
     const parser = Parser.parse(tokens);
-    std.debug.print("{any}\n", .{parser.program.statements});
+    std.debug.print("{}\n", .{std.json.fmt(parser.program.statements, .{ .whitespace = .indent_2 })});
 
     for (parser.errors) |e| {
         std.log.err("{s}", .{e.message});
