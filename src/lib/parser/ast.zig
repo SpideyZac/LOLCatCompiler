@@ -20,8 +20,6 @@ pub const ProgramNode = struct {
 };
 
 pub const StatementNodeValueOption = union(enum) {
-    Token: TokenNode,
-    Program: ProgramNode,
     NumberValue: NumberValueNode,
 };
 
