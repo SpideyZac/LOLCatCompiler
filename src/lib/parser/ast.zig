@@ -21,6 +21,7 @@ pub const ProgramNode = struct {
 
 pub const StatementNodeValueOption = union(enum) {
     NumberValue: NumberValueNode,
+    NumbarValue: NumbarValueNode,
 };
 
 pub const StatementNode = struct {
@@ -36,5 +37,13 @@ pub const NumberValueNode = struct {
 
     pub fn value(self: *NumberValueNode) i64 {
         return std.fmt.parseInt(i64, self.token.value().numberValue, 10) catch 0;
+    }
+};
+
+pub const NumbarValueNode = struct {
+    token: TokenNode,
+
+    pub fn value(self: *NumbarValueNode) f64 {
+        return std.fmt.parseFloat(f64, self.token.value().numbarValue) catch 0.0;
     }
 };

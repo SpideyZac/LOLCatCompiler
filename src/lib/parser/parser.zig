@@ -11,7 +11,7 @@ pub const ParserError = struct {
     token: lexer.LexedToken,
 };
 
-const IntermediateParserError = error {
+const IntermediateParserError = error{
     ConsumeTokenError,
     AdvanceTokenError,
 
@@ -32,11 +32,18 @@ pub const Parser = struct {
     errors: std.ArrayList(ParserError),
 
     pub fn parse(t: []lexer.LexedToken) ParserReturn {
-        var parser = Self{ .tokens = t, .current = 0, .errors = std.ArrayList(ParserError).init(allocator) };
+        var parser = Self{
+            .tokens = t,
+            .current = 0,
+            .errors = std.ArrayList(ParserError).init(allocator),
+        };
         defer parser.errors.deinit();
 
         const program = parser.parse_program();
-        return ParserReturn{ .program = program, .errors = parser.errors.toOwnedSlice() catch &[_]ParserError{} };
+        return ParserReturn{
+            .program = program,
+            .errors = parser.errors.toOwnedSlice() catch &[_]ParserError{},
+        };
     }
 
     pub fn parse_program(self: *Self) ast.ProgramNode {
@@ -56,9 +63,16 @@ pub const Parser = struct {
     }
 
     pub fn parse_statement(self: *Self) IntermediateParserError!ast.StatementNode {
-        const parsed_numbervalue = self.parse_numbervalue() catch null;
-        if (parsed_numbervalue != null) {
-            return ast.StatementNode{ .value = ast.StatementNodeValueOption{ .NumberValue = parsed_numbervalue.? } };
+        if (self.check("numbarValue")) {
+            return ast.StatementNode{ .value = ast.StatementNodeValueOption{
+                .NumbarValue = try self.parse_numbarvalue(),
+            } };
+        }
+
+        if (self.check("numberValue")) {
+            return ast.StatementNode{ .value = ast.StatementNodeValueOption{
+                .NumberValue = try self.parse_numbervalue(),
+            } };
         }
 
         self.errors.append(ParserError{ .message = "Expected valid statement or expression", .token = self.peek() }) catch {};
@@ -73,6 +87,16 @@ pub const Parser = struct {
         }
 
         return ast.NumberValueNode{ .token = token.? };
+    }
+
+    pub fn parse_numbarvalue(self: *Self) IntermediateParserError!ast.NumbarValueNode {
+        const token = self.consume("numbarValue") catch null;
+        if (token == null) {
+            self.errors.append(ParserError{ .message = "Expected Numbar Value Token", .token = self.peek() }) catch {};
+            return IntermediateParserError.ParseNumberValueError;
+        }
+
+        return ast.NumbarValueNode{ .token = token.? };
     }
 
     pub fn check(self: *Self, token: []const u8) bool {
