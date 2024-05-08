@@ -26,7 +26,7 @@ pub const StatementNodeValueOption = union(enum) {
 pub const StatementNode = struct {
     value: StatementNodeValueOption,
 
-    pub fn value(self: *StatementNode) AllNodes {
+    pub fn value(self: *StatementNode) StatementNodeValueOption {
         return self.value;
     }
 };
