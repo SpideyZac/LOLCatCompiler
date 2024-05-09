@@ -20,8 +20,7 @@ pub const ProgramNode = struct {
 };
 
 pub const StatementNodeValueOption = union(enum) {
-    NumberValue: NumberValueNode,
-    NumbarValue: NumbarValueNode,
+    Expression: ExpressionNode,
     KTHXBYE_Word: KTHXBYE_WordNode,
 };
 
@@ -29,6 +28,21 @@ pub const StatementNode = struct {
     option: StatementNodeValueOption,
 
     pub fn value(self: *const StatementNode) StatementNodeValueOption {
+        return self.option;
+    }
+};
+
+pub const ExpressionNodeValueOption = union(enum) {
+    // TODO: later add "unknown option here"
+    NumberValue: NumberValueNode,
+    NumbarValue: NumbarValueNode,
+    Expression: *ExpressionNode,
+};
+
+pub const ExpressionNode = struct {
+    option: ExpressionNodeValueOption,
+
+    pub fn value(self: *const ExpressionNode) ExpressionNodeValueOption {
         return self.option;
     }
 };

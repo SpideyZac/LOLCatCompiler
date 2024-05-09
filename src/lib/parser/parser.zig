@@ -13,10 +13,12 @@ pub const ParserError = struct {
 
 const IntermediateParserError = error{
     ConsumeTokenError,
+    UnconsumeTokenError,
     AdvanceTokenError,
 
     ParseStatementError,
 
+    ParseExpressionError,
     ParseNumberValueError,
     ParseNumbarValueError,
 
@@ -89,19 +91,6 @@ pub const Parser = struct {
     }
 
     pub fn parse_statement(self: *Self) IntermediateParserError!ast.StatementNode {
-        // TODO: move these to "expression" parsing
-        if (self.check("numbarValue")) {
-            return ast.StatementNode{ .option = ast.StatementNodeValueOption{
-                .NumbarValue = try self.parse_numbarvalue(),
-            } };
-        }
-
-        if (self.check("numberValue")) {
-            return ast.StatementNode{ .option = ast.StatementNodeValueOption{
-                .NumberValue = try self.parse_numbervalue(),
-            } };
-        }
-
         // kthxbye can also be used to terminate a program so we don't remove it
         if (self.check("word_kthxbye")) {
             return ast.StatementNode{ .option = ast.StatementNodeValueOption{
@@ -109,8 +98,32 @@ pub const Parser = struct {
             } };
         }
 
+        const expression = self.parse_expression() catch null;
+        if (expression != null) {
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption {
+                .Expression = expression.?,
+            } };
+        }
+
         self.errors.append(ParserError{ .message = "Expected valid statement or expression", .token = self.peek() }) catch {};
         return IntermediateParserError.ParseStatementError;
+    }
+
+    pub fn parse_expression(self: *Self) IntermediateParserError!ast.ExpressionNode {
+        if (self.check("numbarValue")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .NumbarValue = try self.parse_numbarvalue(),
+            } };
+        }
+
+        if (self.check("numberValue")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .NumberValue = try self.parse_numbervalue(),
+            } };
+        }
+
+        self.errors.append(ParserError{ .message = "Expected valid expression", .token = self.peek() }) catch {};
+        return IntermediateParserError.ParseExpressionError;
     }
 
     pub fn parse_numbervalue(self: *Self) IntermediateParserError!ast.NumberValueNode {
@@ -148,6 +161,13 @@ pub const Parser = struct {
             return true;
         }
         return false;
+    }
+
+    pub fn unconsume(self: *Self, num: usize) IntermediateParserError!void {
+        if (self.current - num < 0) {
+            return IntermediateParserError.UnconsumeTokenError;
+        }
+        self.current -= num;
     }
 
     pub fn consume(self: *Self, token: []const u8) IntermediateParserError!ast.TokenNode {
