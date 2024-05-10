@@ -130,6 +130,13 @@ pub const Parser = struct {
             } };
         }
 
+        const variable_assignment = self.parse_variable_assignment() catch null;
+        if (variable_assignment != null) {
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption {
+                .VariableAssignment = variable_assignment.?,
+            } };
+        }
+
         const expression = self.parse_expression() catch null;
         if (expression != null) {
             return ast.StatementNode{ .option = ast.StatementNodeValueOption {
@@ -261,6 +268,53 @@ pub const Parser = struct {
         return ast.VariableDeclarationNode{
             .identifier = identifier.?,
             .var_type = null,
+        };
+    }
+
+    pub fn parse_variable_assignment(self: *Self) IntermediateParserError!ast.VariableAssignmentNode {
+        const identifier = self.consume("identifier") catch null;
+        var var_dec: ?ast.VariableDeclarationNode = null;
+        if (identifier == null) {
+            if (self.stmts.items.len > 0) {
+                switch (self.stmts.items[self.stmts.items.len - 1].option) {
+                    .VariableDeclaration => {
+                        var_dec = self.stmts.items[self.stmts.items.len - 1].option.VariableDeclaration;
+                    },
+                    else => {
+                        self.create_error(ParserError{ .message = "Expected identifier or variable decleration for variable assignment", .token = self.peek() });
+                        return IntermediateParserError.ParseVariableAssignmentError;
+                    },
+                }
+            } else {
+                self.create_error(ParserError{ .message = "Expected identifier or variable decleration for variable assignment", .token = self.peek() });
+                return IntermediateParserError.ParseVariableAssignmentError;
+            }
+        }
+
+        _ = self.consume("word_r") catch {
+            self.create_error(ParserError{ .message = "Expected R to assign variable", .token = self.peek() });
+            return IntermediateParserError.ParseVariableAssignmentError;
+        };
+
+        const expression = self.parse_expression() catch null;
+        if (expression == null) {
+            self.create_error(ParserError{ .message = "Expected expression for variable assignment", .token = self.peek() });
+            return IntermediateParserError.ParseVariableAssignmentError;
+        }
+
+        if (var_dec != null) {
+            return ast.VariableAssignmentNode{
+                .variable = ast.VariableAssignmentNodeVariableOption{
+                    .VariableDeclaration = var_dec.?,
+                },
+                .expression = expression.?,
+            };
+        }
+        return ast.VariableAssignmentNode{
+            .variable = ast.VariableAssignmentNodeVariableOption{
+                .Identifier = identifier.?,
+            },
+            .expression = expression.?,
         };
     }
 
