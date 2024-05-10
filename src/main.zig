@@ -18,7 +18,7 @@ pub fn main() !void {
     // );
     // defer std.heap.page_allocator.free(contents);
 
-    const contents = "HAI 1.2\n1 1.23\nKTHXBYE";
+    const contents = "HAI 1.2\n1 1.23\nI HAS A x ITZ \nKTHXBYE";
 
     // Initalize Lexer on Contents
     var lexer = Lexer.init(contents);
@@ -29,6 +29,7 @@ pub fn main() !void {
         std.debug.print("{s}: {}\n", .{token.to_name(), std.json.fmt(token, .{ .whitespace = .indent_2 })});
     }
 
+    std.debug.print("\n\n\nLexer Errors:\n", .{});
     const hasErrors = Lexer.has_errors(tokens);
     if (hasErrors) {
         std.log.err(
@@ -42,7 +43,8 @@ pub fn main() !void {
     const parser = Parser.parse(tokens);
     std.debug.print("{}\n", .{std.json.fmt(parser.program.statements, .{ .whitespace = .indent_2 })});
 
+    std.debug.print("\n\n\nParser Errors:\n", .{});
     for (parser.errors) |e| {
-        std.log.err("{s}", .{e.message});
+        std.log.err("{}", .{std.json.fmt(e, .{ .whitespace = .indent_2 })});
     }
 }

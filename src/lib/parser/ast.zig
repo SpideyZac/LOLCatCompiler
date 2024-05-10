@@ -21,6 +21,8 @@ pub const ProgramNode = struct {
 
 pub const StatementNodeValueOption = union(enum) {
     Expression: ExpressionNode,
+    VariableDeclaration: VariableDeclarationNode,
+    VariableAssignment: VariableAssignmentNode,
     KTHXBYE_Word: KTHXBYE_WordNode,
 };
 
@@ -33,10 +35,8 @@ pub const StatementNode = struct {
 };
 
 pub const ExpressionNodeValueOption = union(enum) {
-    // TODO: later add "unknown option here"
     NumberValue: NumberValueNode,
     NumbarValue: NumbarValueNode,
-    Expression: *ExpressionNode,
 };
 
 pub const ExpressionNode = struct {
@@ -65,6 +65,29 @@ pub const NumbarValueNode = struct {
 
 pub const KTHXBYE_WordNode = struct {
     token: TokenNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const VariableDeclarationNode = struct {
+    identifier: TokenNode,
+    var_type: ?TokenNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const VariableAssignmentNodeVariableOption = union(enum) {
+    Identifier: TokenNode,
+    VariableDeclaration: VariableDeclarationNode,
+};
+
+pub const VariableAssignmentNode = struct {
+    variable: VariableAssignmentNodeVariableOption,
+    expression: ExpressionNode,
 
     pub fn value() void {
         return;

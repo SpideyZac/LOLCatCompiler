@@ -101,28 +101,28 @@ pub const Token = union(enum) {
     identifier: []const u8,
 
     pub fn parse_word(word: []const u8) Token {
-        if (std.mem.eql(u8, word, "NOOB")) {
-            return .noob;
-        } else if (std.mem.eql(u8, word, "WIN")) {
-            return .win;
-        } else if (std.mem.eql(u8, word, "FAIL")) {
-            return .fail;
-        } else if (std.mem.eql(u8, word, "TROOF")) {
-            return .troof;
-        } else if (std.mem.eql(u8, word, "YARN")) {
-            return .yarn;
-        } else if (std.mem.eql(u8, word, "NUMBER")) {
+        if (std.mem.eql(u8, word, "NUMBER")) {
             return .number;
         } else if (std.mem.eql(u8, word, "NUMBAR")) {
             return .numbar;
-        } else if (std.mem.eql(u8, word, "BTW")) {
-            return .singleLineComment;
+        } else if (std.mem.eql(u8, word, "NOOB")) {
+            return .noob;
+        } else if (std.mem.eql(u8, word, "TROOF")) {
+            return .troof;
+        }  else if (std.mem.eql(u8, word, "YARN")) {
+            return .yarn;
         } else if (std.mem.eql(u8, word, "I")) {
             return .word_i;
         } else if (std.mem.eql(u8, word, "HAS")) {
             return .word_has;
         } else if (std.mem.eql(u8, word, "A")) {
             return .word_a;
+        } else if (std.mem.eql(u8, word, "R")) {
+            return .word_r;
+        } else if (std.mem.eql(u8, word, "ITZ")) {
+            return .word_itz;
+        } else if (std.mem.eql(u8, word, "AN")) {
+            return .word_an;
         } else if (std.mem.eql(u8, word, "SUM")) {
             return .word_sum;
         } else if (std.mem.eql(u8, word, "OF")) {

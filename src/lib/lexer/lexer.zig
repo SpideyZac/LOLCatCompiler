@@ -6,6 +6,7 @@ pub const LexedToken = struct {
     token: Token,
     start: usize,
     end: usize,
+    index: usize,
 
     pub fn to_name(self: LexedToken) []const u8 {
         return self.token.to_name();
@@ -32,6 +33,7 @@ pub const Lexer = struct {
     pos: usize = 0,
     read_pos: usize = 0,
     curr_ch: u8 = 0,
+    token_count: usize = 0,
 
     pub fn init(src: []const u8) Self {
         var l = Self{ .src = src };
@@ -185,7 +187,8 @@ pub const Lexer = struct {
         const end = self.read_pos;
         self.read_ch();
 
-        return LexedToken{ .token = token, .start = start, .end = end };
+        self.token_count += 1;
+        return LexedToken{ .token = token, .start = start, .end = end, .index = self.token_count - 1 };
     }
 
     pub fn get_tokens(self: *Self) ![]LexedToken {
