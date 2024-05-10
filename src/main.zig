@@ -18,7 +18,7 @@ pub fn main() !void {
     // );
     // defer std.heap.page_allocator.free(contents);
 
-    const contents = "HAI 1.2\n1 1.23\nI HAS A x ITZ NUMBER R 10\nKTHXBYE";
+    const contents = "HAI 1.2\n1 1.23\nI HAS A x ITZ TROOF R FAIL\nI HAS A\nKTHXBYE";
 
     // Initalize Lexer on Contents
     var lexer = Lexer.init(contents);

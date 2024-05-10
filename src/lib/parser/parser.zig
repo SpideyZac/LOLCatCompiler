@@ -21,6 +21,8 @@ const IntermediateParserError = error{
     ParseExpressionError,
     ParseNumberValueError,
     ParseNumbarValueError,
+    ParseStringError,
+    ParseTroofValueError,
 
     ParseKTHXBYE_WordError,
 
@@ -67,7 +69,16 @@ pub const Parser = struct {
             if (parser.consumed_tokens.items[e.token.index]) {
                 continue;
             }
-            filtered_errors.append(e) catch {};
+            var set = false;
+            for (filtered_errors.items, 0..) |fe, i| {
+                if (e.token.index == fe.token.index) {
+                    filtered_errors.items[i] = e;
+                    set = true;
+                }
+            }
+            if (!set) {
+                filtered_errors.append(e) catch {};
+            }
         }
 
         return ParserReturn{
@@ -161,6 +172,18 @@ pub const Parser = struct {
             } };
         }
 
+        if (self.check("string")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .String = try self.parse_string(),
+            } };
+        }
+
+        if (self.check("win") or self.check("fail")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .TroofValue = try self.parse_troofvalue(),
+            } };
+        }
+
         self.create_error(ParserError{ .message = "Expected valid expression", .token = self.peek() });
         return IntermediateParserError.ParseExpressionError;
     }
@@ -183,6 +206,31 @@ pub const Parser = struct {
         }
 
         return ast.NumbarValueNode{ .token = token.? };
+    }
+
+    pub fn parse_string(self: *Self) IntermediateParserError!ast.StringNode {
+        const token = self.consume("string") catch null;
+        if (token == null) {
+            self.create_error(ParserError{ .message = "Expected String Token", .token = self.peek() });
+            return IntermediateParserError.ParseStringError;
+        }
+
+        return ast.StringNode{ .token = token.? };
+    }
+
+    pub fn parse_troofvalue(self: *Self) IntermediateParserError!ast.TroofValueNode {
+        const win = self.consume("win") catch null;
+        if (win == null) {
+            const fail = self.consume("fail") catch null;
+            if (fail == null) {
+                self.create_error(ParserError{ .message = "Expected String Token", .token = self.peek() });
+                return IntermediateParserError.ParseTroofValueError;
+            }
+
+            return ast.TroofValueNode{ .token = fail.? };
+        }
+
+        return ast.TroofValueNode{ .token = win.? };
     }
 
     pub fn parse_KTHXBYE_word(self: *Self) IntermediateParserError!ast.KTHXBYE_WordNode {

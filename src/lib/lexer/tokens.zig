@@ -219,6 +219,10 @@ pub const Token = union(enum) {
             return .word_hai;
         } else if (std.mem.eql(u8, word, "KTHXBYE")) {
             return .word_kthxbye;
+        } else if (std.mem.eql(u8, word, "WIN")) {
+            return .win;
+        } else if (std.mem.eql(u8, word, "FAIL")) {
+            return .fail;
         } else {
             return Token{ .identifier = word };
         }

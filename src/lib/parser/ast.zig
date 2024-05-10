@@ -37,6 +37,8 @@ pub const StatementNode = struct {
 pub const ExpressionNodeValueOption = union(enum) {
     NumberValue: NumberValueNode,
     NumbarValue: NumbarValueNode,
+    String: StringNode,
+    TroofValue: TroofValueNode,
 };
 
 pub const ExpressionNode = struct {
@@ -60,6 +62,25 @@ pub const NumbarValueNode = struct {
 
     pub fn value(self: *const NumbarValueNode) f64 {
         return std.fmt.parseFloat(f64, self.token.value().numbarValue) catch 0.0;
+    }
+};
+
+pub const StringNode = struct {
+    token: TokenNode,
+
+    pub fn value(self: *const StringNode) []const u8 {
+        return self.token.value().string;
+    }
+};
+
+pub const TroofValueNode = struct {
+    token: TokenNode,
+
+    pub fn value(self: *const TroofValueNode) bool {
+        return switch (self.token.value()) {
+            .win => true,
+            else => false,
+        };
     }
 };
 
