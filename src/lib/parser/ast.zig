@@ -39,6 +39,14 @@ pub const ExpressionNodeValueOption = union(enum) {
     NumbarValue: NumbarValueNode,
     String: StringNode,
     TroofValue: TroofValueNode,
+    VariableReference: VariableReferenceNode,
+    Sum: SumNode,
+    Diff: DiffNode,
+    Produkt: ProduktNode,
+    Quoshunt: QuoshuntNode,
+    Mod: ModNode,
+    Biggr: BiggrNode,
+    Smallr: SmallrNode,
 };
 
 pub const ExpressionNode = struct {
@@ -81,6 +89,77 @@ pub const TroofValueNode = struct {
             .win => true,
             else => false,
         };
+    }
+};
+
+pub const VariableReferenceNode = struct {
+    identifier: TokenNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const SumNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const DiffNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const ProduktNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const QuoshuntNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const ModNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const BiggrNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const SmallrNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
     }
 };
 

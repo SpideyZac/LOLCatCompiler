@@ -23,6 +23,14 @@ const IntermediateParserError = error{
     ParseNumbarValueError,
     ParseStringError,
     ParseTroofValueError,
+    ParseVariableReferenceError,
+    ParseSumError,
+    ParseDiffError,
+    ParseProduktError,
+    ParseQuoshuntError,
+    ParseModError,
+    ParseBiggrError,
+    ParseSmallrError,
 
     ParseKTHXBYE_WordError,
 
@@ -193,6 +201,54 @@ pub const Parser = struct {
             } };
         }
 
+        if (self.check("identifier")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .VariableReference = try self.parse_variable_reference(),
+            } };
+        }
+
+        if (self.check("word_sum")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Sum = try self.parse_sum(),
+            } };
+        }
+
+        if (self.check("word_diff")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Diff = try self.parse_diff(),
+            } };
+        }
+
+        if (self.check("word_produkt")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Produkt = try self.parse_produkt(),
+            } };
+        }
+
+        if (self.check("word_quoshunt")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Quoshunt = try self.parse_quoshunt(),
+            } };
+        }
+
+        if (self.check("word_mod")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Mod = try self.parse_mod(),
+            } };
+        }
+
+        if (self.check("word_biggr")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Biggr = try self.parse_biggr(),
+            } };
+        }
+
+        if (self.check("word_smallr")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Smallr = try self.parse_smallr(),
+            } };
+        }
+
         self.create_error(ParserError{ .message = "Expected valid expression", .token = self.peek() });
         return IntermediateParserError.ParseExpressionError;
     }
@@ -250,6 +306,312 @@ pub const Parser = struct {
         return ast.TroofValueNode{ .token = win.? };
     }
 
+    pub fn parse_variable_reference(self: *Self) IntermediateParserError!ast.VariableReferenceNode {
+        self.next_level();
+        defer self.prev_level();
+        const token = self.consume("identifier") catch null;
+        if (token == null) {
+            self.create_error(ParserError{ .message = "Expected Identifier Token", .token = self.peek() });
+            return IntermediateParserError.ParseVariableReferenceError;
+        }
+
+        return ast.VariableReferenceNode{ .identifier = token.? };
+    }
+
+    pub fn parse_sum(self: *Self) IntermediateParserError!ast.SumNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_sum") catch {
+            self.create_error(ParserError{ .message = "Expected SUM keyword", .token = self.peek() });
+            return IntermediateParserError.ParseSumError;
+        };
+
+        _ = self.consume("word_of") catch {
+            self.create_error(ParserError{ .message = "Expected OF keyword for SUM", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSumError;
+            return IntermediateParserError.ParseSumError;
+        };
+
+        const expression1 = self.parse_expression() catch null;
+        if (expression1 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for SUM", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSumError;
+            return IntermediateParserError.ParseSumError;
+        }
+
+        _ = self.consume("word_an") catch {
+            self.create_error(ParserError{ .message = "Expected AN keyword for SUM", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSumError;
+            return IntermediateParserError.ParseSumError;
+        };
+
+        const expression2 = self.parse_expression() catch null;
+        if (expression2 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for SUM", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSumError;
+            return IntermediateParserError.ParseSumError;
+        }
+
+        return ast.SumNode{
+            .left = &expression1.?,
+            .right = &expression2.?,
+        };
+    }
+
+    pub fn parse_diff(self: *Self) IntermediateParserError!ast.DiffNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_diff") catch {
+            self.create_error(ParserError{ .message = "Expected DIFF keyword", .token = self.peek() });
+            return IntermediateParserError.ParseDiffError;
+        };
+
+        _ = self.consume("word_of") catch {
+            self.create_error(ParserError{ .message = "Expected OF keyword for DIFF", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseDiffError;
+            return IntermediateParserError.ParseDiffError;
+        };
+
+        const expression1 = self.parse_expression() catch null;
+        if (expression1 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for DIFF", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseDiffError;
+            return IntermediateParserError.ParseDiffError;
+        }
+
+        _ = self.consume("word_an") catch {
+            self.create_error(ParserError{ .message = "Expected AN keyword for DIFF", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseDiffError;
+            return IntermediateParserError.ParseDiffError;
+        };
+
+        const expression2 = self.parse_expression() catch null;
+        if (expression2 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for DIFF", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseDiffError;
+            return IntermediateParserError.ParseDiffError;
+        }
+
+        return ast.DiffNode{
+            .left = &expression1.?,
+            .right = &expression2.?,
+        };
+    }
+
+    pub fn parse_produkt(self: *Self) IntermediateParserError!ast.ProduktNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_produkt") catch {
+            self.create_error(ParserError{ .message = "Expected PRODUKT keyword", .token = self.peek() });
+            return IntermediateParserError.ParseProduktError;
+        };
+
+        _ = self.consume("word_of") catch {
+            self.create_error(ParserError{ .message = "Expected OF keyword for PRODUKT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseProduktError;
+            return IntermediateParserError.ParseProduktError;
+        };
+
+        const expression1 = self.parse_expression() catch null;
+        if (expression1 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for PRODUKT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseProduktError;
+            return IntermediateParserError.ParseProduktError;
+        }
+
+        _ = self.consume("word_an") catch {
+            self.create_error(ParserError{ .message = "Expected AN keyword for PRODUKT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseProduktError;
+            return IntermediateParserError.ParseProduktError;
+        };
+
+        const expression2 = self.parse_expression() catch null;
+        if (expression2 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for PRODUKT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseProduktError;
+            return IntermediateParserError.ParseProduktError;
+        }
+
+        return ast.ProduktNode{
+            .left = &expression1.?,
+            .right = &expression2.?,
+        };
+    }
+
+    pub fn parse_quoshunt(self: *Self) IntermediateParserError!ast.QuoshuntNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_quoshunt") catch {
+            self.create_error(ParserError{ .message = "Expected QUOSHUNT keyword", .token = self.peek() });
+            return IntermediateParserError.ParseQuoshuntError;
+        };
+
+        _ = self.consume("word_of") catch {
+            self.create_error(ParserError{ .message = "Expected OF keyword for QUOSHUNT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseQuoshuntError;
+            return IntermediateParserError.ParseQuoshuntError;
+        };
+
+        const expression1 = self.parse_expression() catch null;
+        if (expression1 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for QUOSHUNT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseQuoshuntError;
+            return IntermediateParserError.ParseQuoshuntError;
+        }
+
+        _ = self.consume("word_an") catch {
+            self.create_error(ParserError{ .message = "Expected AN keyword for QUOSHUNT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseQuoshuntError;
+            return IntermediateParserError.ParseQuoshuntError;
+        };
+
+        const expression2 = self.parse_expression() catch null;
+        if (expression2 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for QUOSHUNT", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseQuoshuntError;
+            return IntermediateParserError.ParseQuoshuntError;
+        }
+
+        return ast.QuoshuntNode{
+            .left = &expression1.?,
+            .right = &expression2.?,
+        };
+    }
+
+    pub fn parse_mod(self: *Self) IntermediateParserError!ast.ModNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_mod") catch {
+            self.create_error(ParserError{ .message = "Expected MOD keyword", .token = self.peek() });
+            return IntermediateParserError.ParseModError;
+        };
+
+        _ = self.consume("word_of") catch {
+            self.create_error(ParserError{ .message = "Expected OF keyword for MOD", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseModError;
+            return IntermediateParserError.ParseModError;
+        };
+
+        const expression1 = self.parse_expression() catch null;
+        if (expression1 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for MOD", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseModError;
+            return IntermediateParserError.ParseModError;
+        }
+
+        _ = self.consume("word_an") catch {
+            self.create_error(ParserError{ .message = "Expected AN keyword for MOD", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseModError;
+            return IntermediateParserError.ParseModError;
+        };
+
+        const expression2 = self.parse_expression() catch null;
+        if (expression2 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for MOD", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseModError;
+            return IntermediateParserError.ParseModError;
+        }
+
+        return ast.ModNode{
+            .left = &expression1.?,
+            .right = &expression2.?,
+        };
+    }
+
+    pub fn parse_biggr(self: *Self) IntermediateParserError!ast.BiggrNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_biggr") catch {
+            self.create_error(ParserError{ .message = "Expected BIGGR keyword", .token = self.peek() });
+            return IntermediateParserError.ParseBiggrError;
+        };
+
+        _ = self.consume("word_of") catch {
+            self.create_error(ParserError{ .message = "Expected OF keyword for BIGGR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseBiggrError;
+            return IntermediateParserError.ParseBiggrError;
+        };
+
+        const expression1 = self.parse_expression() catch null;
+        if (expression1 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for BIGGR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseBiggrError;
+            return IntermediateParserError.ParseBiggrError;
+        }
+
+        _ = self.consume("word_an") catch {
+            self.create_error(ParserError{ .message = "Expected AN keyword for BIGGR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseBiggrError;
+            return IntermediateParserError.ParseBiggrError;
+        };
+
+        const expression2 = self.parse_expression() catch null;
+        if (expression2 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for BIGGR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseBiggrError;
+            return IntermediateParserError.ParseBiggrError;
+        }
+
+        return ast.BiggrNode{
+            .left = &expression1.?,
+            .right = &expression2.?,
+        };
+    }
+
+    pub fn parse_smallr(self: *Self) IntermediateParserError!ast.SmallrNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_smallr") catch {
+            self.create_error(ParserError{ .message = "Expected SMALLR keyword", .token = self.peek() });
+            return IntermediateParserError.ParseSmallrError;
+        };
+
+        _ = self.consume("word_of") catch {
+            self.create_error(ParserError{ .message = "Expected OF keyword for SMALLR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSmallrError;
+            return IntermediateParserError.ParseSmallrError;
+        };
+
+        const expression1 = self.parse_expression() catch null;
+        if (expression1 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for SMALLR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSmallrError;
+            return IntermediateParserError.ParseSmallrError;
+        }
+
+        _ = self.consume("word_an") catch {
+            self.create_error(ParserError{ .message = "Expected AN keyword for SMALLR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSmallrError;
+            return IntermediateParserError.ParseSmallrError;
+        };
+
+        const expression2 = self.parse_expression() catch null;
+        if (expression2 == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for SMALLR", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSmallrError;
+            return IntermediateParserError.ParseSmallrError;
+        }
+
+        return ast.SmallrNode{
+            .left = &expression1.?,
+            .right = &expression2.?,
+        };
+    }
+
     pub fn parse_KTHXBYE_word(self: *Self) IntermediateParserError!ast.KTHXBYE_WordNode {
         self.next_level();
         defer self.prev_level();
@@ -263,6 +625,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_variable_declaration(self: *Self) IntermediateParserError!ast.VariableDeclarationNode {
+        const start = self.current;
+
         self.next_level();
         defer self.prev_level();
         _ = self.consume("word_i") catch {
@@ -271,19 +635,19 @@ pub const Parser = struct {
         };
         _ = self.consume("word_has") catch {
             self.create_error(ParserError{ .message = "Expected I HAS A to declare variable", .token = self.peek() });
-            self.unconsume(1) catch return IntermediateParserError.ParseVariableDeclarationError;
+            self.reset(start) catch return IntermediateParserError.ParseVariableDeclarationError;
             return IntermediateParserError.ParseVariableDeclarationError;
         };
         _ = self.consume("word_a") catch {
             self.create_error(ParserError{ .message = "Expected I HAS A to declare variable", .token = self.peek() });
-            self.unconsume(2) catch return IntermediateParserError.ParseVariableDeclarationError;
+            self.reset(start) catch return IntermediateParserError.ParseVariableDeclarationError;
             return IntermediateParserError.ParseVariableDeclarationError;
         };
 
         const identifier = self.consume("identifier") catch null;
         if (identifier == null) {
             self.create_error(ParserError{ .message = "Expected identifier for variable declaration", .token = self.peek() });
-            self.unconsume(3) catch return IntermediateParserError.ParseVariableDeclarationError;
+            self.reset(start) catch return IntermediateParserError.ParseVariableDeclarationError;
             return IntermediateParserError.ParseVariableDeclarationError;
         }
 
@@ -330,7 +694,7 @@ pub const Parser = struct {
             }
 
             self.create_error(ParserError{ .message = "Expected valid type for variable declaration", .token = self.peek() });
-            self.unconsume(5) catch return IntermediateParserError.ParseVariableDeclarationError;
+            self.reset(start) catch return IntermediateParserError.ParseVariableDeclarationError;
             return IntermediateParserError.ParseVariableDeclarationError;
         }
 
@@ -410,14 +774,14 @@ pub const Parser = struct {
         self.level -= 1;
     }
 
-    pub fn unconsume(self: *Self, num: usize) IntermediateParserError!void {
-        if (self.current - num < 0) {
+    pub fn reset(self: *Self, num: usize) IntermediateParserError!void {
+        if (num < 0 or num >= self.tokens.len) {
             return IntermediateParserError.UnconsumeTokenError;
         }
-        for ((self.tokens.len - num)..self.tokens.len) |i| {
+        for (num..self.tokens.len) |i| {
             self.consumed_tokens.items[i] = false;
         }
-        self.current -= num;
+        self.current = num;
     }
 
     pub fn consume(self: *Self, token: []const u8) IntermediateParserError!ast.TokenNode {
