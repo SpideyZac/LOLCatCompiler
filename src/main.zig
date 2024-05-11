@@ -18,7 +18,7 @@ pub fn main() !void {
     // );
     // defer std.heap.page_allocator.free(contents);
 
-    const contents = "HAI 1.2\n1 1.23\nI HAS A x ITZ TROOF R FAIL\nI HAS A\nKTHXBYE";
+    const contents = "HAI 1.2\nI HAS A x ITZ YARN R \"zac es cool\"\nYR\nKTHXBYE";
 
     // Initalize Lexer on Contents
     var lexer = Lexer.init(contents);
@@ -38,6 +38,9 @@ pub fn main() !void {
         );
     }
 
+    if (hasErrors) {
+        return;
+    }
     // Initalize Parser on Tokens
     std.debug.print("\n\n\nParser:\n", .{});
     const parser = Parser.parse(tokens);

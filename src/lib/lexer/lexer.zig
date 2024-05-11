@@ -104,7 +104,7 @@ pub const Lexer = struct {
             self.read_ch();
         }
 
-        if (self.curr_ch == 0) {
+        if (self.curr_ch == 0 or self.curr_ch != '"') {
             return Token{ .illegal = Errors.UnterminatedString };
         }
 

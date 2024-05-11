@@ -41,6 +41,8 @@ pub const Parser = struct {
     tokens: []lexer.LexedToken,
     current: usize,
     errors: std.ArrayList(ParserError),
+    levels: std.ArrayList(usize),
+    level: usize = 0,
     stmts: std.ArrayList(ast.StatementNode),
     consumed_tokens: std.ArrayList(bool),
 
@@ -49,10 +51,12 @@ pub const Parser = struct {
             .tokens = t,
             .current = 0,
             .errors = std.ArrayList(ParserError).init(allocator),
+            .levels = std.ArrayList(usize).init(allocator),
             .stmts = std.ArrayList(ast.StatementNode).init(allocator),
             .consumed_tokens = std.ArrayList(bool).init(allocator),
         };
         defer parser.errors.deinit();
+        defer parser.levels.deinit();
         defer parser.stmts.deinit();
         defer parser.consumed_tokens.deinit();
 
@@ -65,18 +69,21 @@ pub const Parser = struct {
         const errors = parser.errors.toOwnedSlice() catch &[_]ParserError{};
         var filtered_errors = std.ArrayList(ParserError).init(allocator);
         defer filtered_errors.deinit();
-        for (errors) |e| {
+        for (errors, 0..) |e, i| {
             if (parser.consumed_tokens.items[e.token.index]) {
                 continue;
             }
-            var set = false;
-            for (filtered_errors.items, 0..) |fe, i| {
-                if (e.token.index == fe.token.index) {
-                    filtered_errors.items[i] = e;
-                    set = true;
+
+            var foundMatch = false;
+            for (errors, 0..) |_, j| {
+                if (i == j) {
+                    continue;
+                }
+                if (parser.levels.items[j] == parser.levels.items[i]) {
+                    foundMatch = true;
                 }
             }
-            if (!set) {
+            if (!foundMatch) {
                 filtered_errors.append(e) catch {};
             }
         }
@@ -88,45 +95,45 @@ pub const Parser = struct {
     }
 
     pub fn parse_program(self: *Self) ast.ProgramNode {
-        var statements = std.ArrayList(ast.StatementNode).init(allocator);
-        defer statements.deinit();
-
+        self.next_level();
+        defer self.prev_level();
         const hai = self.consume("word_hai") catch null;
         if (hai == null) {
-            self.create_error(ParserError{ .message = "Expected HAI to start program", .token = self.peek() });
-            return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+            self.create_error_with_level(ParserError{ .message = "Expected HAI to start program", .token = self.peek() }, self.level - 1);
+            return ast.ProgramNode{ .statements = self.stmts.toOwnedSlice() catch &[_]ast.StatementNode{} };
         }
         const version = self.parse_numbarvalue() catch null;
         if (version == null) {
-            self.create_error(ParserError{ .message = "Expected version number (of type NUMBAR)", .token = self.peek() });
-            return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+            self.create_error_with_level(ParserError{ .message = "Expected version number (of type NUMBAR)", .token = self.peek() }, self.level - 1);
+            return ast.ProgramNode{ .statements = self.stmts.toOwnedSlice() catch &[_]ast.StatementNode{} };
         }
         if (version.?.value() != 1.2) {
-            self.create_error(ParserError{ .message = "Expected version number 1.2", .token = self.previous() });
-            return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+            self.create_error_with_level(ParserError{ .message = "Expected version number 1.2", .token = self.previous() }, self.level - 1);
+            return ast.ProgramNode{ .statements = self.stmts.toOwnedSlice() catch &[_]ast.StatementNode{} };
         }
 
         while (!self.isAtEnd()) {
             const parsed_statement = self.parse_statement() catch null;
             if (parsed_statement == null) {
-                self.create_error(ParserError{ .message = "Expected valid statement line", .token = self.peek() });
-                return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+                self.create_error_with_level(ParserError{ .message = "Expected valid statement line", .token = self.peek() }, self.level - 1);
+                return ast.ProgramNode{ .statements = self.stmts.toOwnedSlice() catch &[_]ast.StatementNode{} };
             }
             self.stmts.append(parsed_statement.?) catch {};
-            statements.append(parsed_statement.?) catch {};
         }
 
-        switch (statements.items[statements.items.len - 1].option) {
+        switch (self.stmts.items[self.stmts.items.len - 1].option) {
             .KTHXBYE_Word => {},
             else => {
-                self.create_error(ParserError{ .message = "Expected KTHXBYE to end program", .token = self.previous() }); 
+                self.create_error_with_level(ParserError{ .message = "Expected KTHXBYE to end program", .token = self.previous() }, self.level - 1); 
             },
         }
 
-        return ast.ProgramNode{ .statements = statements.toOwnedSlice() catch &[_]ast.StatementNode{} };
+        return ast.ProgramNode{ .statements = self.stmts.toOwnedSlice() catch &[_]ast.StatementNode{} };
     }
 
     pub fn parse_statement(self: *Self) IntermediateParserError!ast.StatementNode {
+        self.next_level();
+        defer self.prev_level();
         // kthxbye can also be used to terminate a program so we don't remove it
         if (self.check("word_kthxbye")) {
             return ast.StatementNode{ .option = ast.StatementNodeValueOption{
@@ -155,11 +162,13 @@ pub const Parser = struct {
             } };
         }
 
-        self.create_error(ParserError{ .message = "Expected valid statement or expression", .token = self.peek() });
+        self.create_error_with_level(ParserError{ .message = "Expected valid statement or expression", .token = self.peek() }, self.level - 1);
         return IntermediateParserError.ParseStatementError;
     }
 
     pub fn parse_expression(self: *Self) IntermediateParserError!ast.ExpressionNode {
+        self.next_level();
+        defer self.prev_level();
         if (self.check("numbarValue")) {
             return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
                 .NumbarValue = try self.parse_numbarvalue(),
@@ -189,6 +198,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_numbervalue(self: *Self) IntermediateParserError!ast.NumberValueNode {
+        self.next_level();
+        defer self.prev_level();
         const token = self.consume("numberValue") catch null;
         if (token == null) {
             self.create_error(ParserError{ .message = "Expected Number Value Token", .token = self.peek() });
@@ -199,6 +210,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_numbarvalue(self: *Self) IntermediateParserError!ast.NumbarValueNode {
+        self.next_level();
+        defer self.prev_level();
         const token = self.consume("numbarValue") catch null;
         if (token == null) {
             self.create_error(ParserError{ .message = "Expected Numbar Value Token", .token = self.peek() });
@@ -209,6 +222,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_string(self: *Self) IntermediateParserError!ast.StringNode {
+        self.next_level();
+        defer self.prev_level();
         const token = self.consume("string") catch null;
         if (token == null) {
             self.create_error(ParserError{ .message = "Expected String Token", .token = self.peek() });
@@ -219,6 +234,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_troofvalue(self: *Self) IntermediateParserError!ast.TroofValueNode {
+        self.next_level();
+        defer self.prev_level();
         const win = self.consume("win") catch null;
         if (win == null) {
             const fail = self.consume("fail") catch null;
@@ -234,6 +251,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_KTHXBYE_word(self: *Self) IntermediateParserError!ast.KTHXBYE_WordNode {
+        self.next_level();
+        defer self.prev_level();
         const token = self.consume("word_kthxbye") catch null;
         if (token == null) {
             self.create_error(ParserError{ .message = "Expected KTHXBYE Word Token", .token = self.peek() });
@@ -244,6 +263,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_variable_declaration(self: *Self) IntermediateParserError!ast.VariableDeclarationNode {
+        self.next_level();
+        defer self.prev_level();
         _ = self.consume("word_i") catch {
             self.create_error(ParserError{ .message = "Expected I HAS A to declare variable", .token = self.peek() });
             return IntermediateParserError.ParseVariableDeclarationError;
@@ -320,6 +341,8 @@ pub const Parser = struct {
     }
 
     pub fn parse_variable_assignment(self: *Self) IntermediateParserError!ast.VariableAssignmentNode {
+        self.next_level();
+        defer self.prev_level();
         const identifier = self.consume("identifier") catch null;
         var var_dec: ?ast.VariableDeclarationNode = null;
         if (identifier == null) {
@@ -350,6 +373,7 @@ pub const Parser = struct {
             return IntermediateParserError.ParseVariableAssignmentError;
         }
 
+        self.stmts.resize(self.stmts.items.len - 1) catch {};
         if (var_dec != null) {
             return ast.VariableAssignmentNode{
                 .variable = ast.VariableAssignmentNodeVariableOption{
@@ -368,6 +392,12 @@ pub const Parser = struct {
 
     pub fn create_error(self: *Self, parser_error: ParserError) void {
         self.errors.append(parser_error) catch {};
+        self.levels.append(self.level) catch {};
+    }
+
+    pub fn create_error_with_level(self: *Self, parser_error: ParserError, level: usize) void {
+        self.errors.append(parser_error) catch {};
+        self.levels.append(level) catch {};
     }
 
     pub fn check(self: *Self, token: []const u8) bool {
@@ -375,6 +405,14 @@ pub const Parser = struct {
             return true;
         }
         return false;
+    }
+
+    pub fn next_level(self: *Self) void {
+        self.level += 1;
+    }
+
+    pub fn prev_level(self: *Self) void {
+        self.level -= 1;
     }
 
     pub fn unconsume(self: *Self, num: usize) IntermediateParserError!void {
