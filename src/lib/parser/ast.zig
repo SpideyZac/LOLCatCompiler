@@ -55,6 +55,7 @@ pub const ExpressionNodeValueOption = union(enum) {
     AnyOf: AnyOfNode,
     BothSaem: BothSaemNode,
     Diffrint: DiffrintNode,
+    Smoosh: SmooshNode,
 };
 
 pub const ExpressionNode = struct {
@@ -234,6 +235,14 @@ pub const BothSaemNode = struct {
 pub const DiffrintNode = struct {
     left: *const ExpressionNode,
     right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const SmooshNode = struct {
+    expressions: []ExpressionNode,
 
     pub fn value() void {
         return;

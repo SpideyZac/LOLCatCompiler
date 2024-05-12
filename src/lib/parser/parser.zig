@@ -39,6 +39,7 @@ const IntermediateParserError = error{
     ParseAnyOfError,
     ParseBothSaemError,
     ParseDiffrintError,
+    ParseSmooshError,
 
     ParseKTHXBYE_WordError,
 
@@ -221,6 +222,9 @@ pub const Parser = struct {
     pub fn parse_expression(self: *Self) IntermediateParserError!ast.ExpressionNode {
         self.next_level();
         defer self.prev_level();
+
+        self.skip_newline();
+
         if (self.check("numbarValue")) {
             return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
                 .NumbarValue = try self.parse_numbarvalue(),
@@ -338,6 +342,12 @@ pub const Parser = struct {
         if (self.check("word_diffrint")) {
             return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
                 .Diffrint = try self.parse_diffrint(),
+            } };
+        }
+
+        if (self.check("word_smoosh")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Smoosh = try self.parse_smoosh(),
             } };
         }
 
@@ -881,6 +891,7 @@ pub const Parser = struct {
 
             expressions.append(expression.?) catch {};
 
+            self.skip_newline();
             if (self.check("word_an")) {
                 _ = self.consume("word_an") catch {
                     self.create_error(ParserError{ .message = "Expected AN keyword for ALL", .token = self.peek() });
@@ -935,6 +946,7 @@ pub const Parser = struct {
             expressions.append(expression.?) catch {};
             std.debug.print("{any}\n", .{&(expression.?)});
 
+            self.skip_newline();
             if (self.check("word_an")) {
                 _ = self.consume("word_an") catch {
                     self.create_error(ParserError{ .message = "Expected AN keyword for ANY", .token = self.peek() });
@@ -1040,6 +1052,66 @@ pub const Parser = struct {
         return ast.DiffrintNode{
             .left = &expression1.?,
             .right = &expression2.?,
+        };
+    }
+
+    pub fn parse_smoosh(self: *Self) IntermediateParserError!ast.SmooshNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_smoosh") catch {
+            self.create_error(ParserError{ .message = "Expected SMOOSH keyword", .token = self.peek() });
+            return IntermediateParserError.ParseSmooshError;
+        };
+
+        var expressions = std.ArrayList(ast.ExpressionNode).init(allocator);
+        defer expressions.deinit();
+
+        var foundEnd = false;
+
+        while (!self.isAtEnd()) {
+            const expression = self.parse_expression() catch null;
+            if (expression == null) {
+                self.create_error(ParserError{ .message = "Expected Expression for SMOOSH", .token = self.peek() });
+                self.reset(start) catch return IntermediateParserError.ParseSmooshError;
+                return IntermediateParserError.ParseSmooshError;
+            }
+
+            expressions.append(expression.?) catch {};
+
+            self.skip_newline();
+            if (self.check("word_an")) {
+                _ = self.consume("word_an") catch {
+                    self.create_error(ParserError{ .message = "Expected AN keyword for SMOOSH", .token = self.peek() });
+                    self.reset(start) catch return IntermediateParserError.ParseSmooshError;
+                    return IntermediateParserError.ParseSmooshError;
+                };
+            } else {
+                // an is optional
+                if (self.check("word_mkay")) {
+                    _ = self.consume("word_mkay") catch {
+                        self.create_error(ParserError{ .message = "Expected MKAY keyword for SMOOSH", .token = self.peek() });
+                        self.reset(start) catch return IntermediateParserError.ParseSmooshError;
+                        return IntermediateParserError.ParseSmooshError;
+                    };
+
+                    foundEnd = true;
+                    break;
+                }
+            }
+        }
+
+        if (!foundEnd) {
+            self.create_error(ParserError{ .message = "Expected MKAY keyword for SMOOSH", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseSmooshError;
+            return IntermediateParserError.ParseSmooshError;
+        }
+
+        const exp = expressions.toOwnedSlice() catch return IntermediateParserError.ParseSmooshError;
+
+        return ast.SmooshNode{
+            .expressions = exp,
         };
     }
 
@@ -1220,6 +1292,12 @@ pub const Parser = struct {
             self.consumed_tokens.items[i] = false;
         }
         self.current = num;
+    }
+
+    pub fn skip_newline(self: *Self) void {
+        while (self.check("newline")) {
+            _ = self.advance() catch null;
+        }
     }
 
     pub fn consume(self: *Self, token: []const u8) IntermediateParserError!ast.TokenNode {

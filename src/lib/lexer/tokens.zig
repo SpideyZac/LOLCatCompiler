@@ -85,6 +85,7 @@ pub const Token = union(enum) {
     word_so,
     word_hai,
     word_kthxbye,
+    word_smoosh,
 
     comma,
     exclamationMark,
@@ -224,6 +225,8 @@ pub const Token = union(enum) {
             return .win;
         } else if (std.mem.eql(u8, word, "FAIL")) {
             return .fail;
+        } else if (std.mem.eql(u8, word, "SMOOSH")) {
+            return .word_smoosh;
         } else {
             return Token{ .identifier = word };
         }
@@ -295,6 +298,7 @@ pub const Token = union(enum) {
             .word_so => "word_so",
             .word_hai => "word_hai",
             .word_kthxbye => "word_kthxbye",
+            .word_smoosh => "word_smoosh",
 
             .questionMark => "questionMark",
             .comma => "comma",
