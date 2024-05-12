@@ -63,7 +63,6 @@ pub const Parser = struct {
     levels: std.ArrayList(usize),
     level: usize = 0,
     stmts: std.ArrayList(ast.StatementNode),
-    consumed_tokens: std.ArrayList(bool),
 
     pub fn parse(t: []lexer.LexedToken) ParserReturn {
         var parser = Self{
@@ -72,16 +71,10 @@ pub const Parser = struct {
             .errors = std.ArrayList(ParserError).init(allocator),
             .levels = std.ArrayList(usize).init(allocator),
             .stmts = std.ArrayList(ast.StatementNode).init(allocator),
-            .consumed_tokens = std.ArrayList(bool).init(allocator),
         };
         defer parser.errors.deinit();
         defer parser.levels.deinit();
         defer parser.stmts.deinit();
-        defer parser.consumed_tokens.deinit();
-
-        for (t) |_| {
-            parser.consumed_tokens.append(false) catch {};
-        }
 
         const program = parser.parse_program();
 
@@ -89,16 +82,12 @@ pub const Parser = struct {
         var filtered_errors = std.ArrayList(ParserError).init(allocator);
         defer filtered_errors.deinit();
         for (errors, 0..) |e, i| {
-            if (parser.consumed_tokens.items[e.token.index]) {
-                continue;
-            }
-
             var foundMatch = false;
-            for (errors, 0..) |_, j| {
+            for (errors, 0..) |e2, j| {
                 if (i == j) {
                     continue;
                 }
-                if (parser.levels.items[j] == parser.levels.items[i]) {
+                if (e2.token.index > e.token.index) {
                     foundMatch = true;
                 }
             }
@@ -1461,9 +1450,6 @@ pub const Parser = struct {
         if (num < 0 or num >= self.tokens.len) {
             return IntermediateParserError.UnconsumeTokenError;
         }
-        for (num..self.tokens.len) |i| {
-            self.consumed_tokens.items[i] = false;
-        }
         self.current = num;
     }
 
@@ -1479,7 +1465,6 @@ pub const Parser = struct {
         }
         if (self.check(token)) {
             _ = try self.advance();
-            self.consumed_tokens.items[self.current - 1] = true;
             return ast.TokenNode{ .token = self.previous() };
         }
         return IntermediateParserError.ConsumeTokenError;
@@ -1488,7 +1473,6 @@ pub const Parser = struct {
     pub fn consume_newline(self: *Self) IntermediateParserError!ast.TokenNode {
         if (self.check("newline")) {
             _ = try self.advance();
-            self.consumed_tokens.items[self.current - 1] = true;
             return ast.TokenNode{ .token = self.previous() };
         }
         return IntermediateParserError.ConsumeTokenError;
