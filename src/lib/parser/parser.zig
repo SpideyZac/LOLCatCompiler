@@ -87,7 +87,7 @@ pub const Parser = struct {
                 if (i == j) {
                     continue;
                 }
-                if (e2.token.index > e.token.index) {
+                if (e2.token.index >= e.token.index) {
                     foundMatch = true;
                 }
             }
