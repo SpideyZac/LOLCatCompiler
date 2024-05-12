@@ -132,7 +132,7 @@ pub const Lexer = struct {
 
     fn skip_whitespace(self: *Self) void {
         const l = self;
-        while (l.curr_ch == ' ' or l.curr_ch == '\t' or is_newline(l.curr_ch)) {
+        while (l.curr_ch == ' ' or l.curr_ch == '\t' or l.curr_ch == '\r') {
             self.read_ch();
         }
     }
@@ -172,6 +172,7 @@ pub const Lexer = struct {
             ',' => .comma,
             '!' => .exclamationMark,
             '?' => .questionMark,
+            '\n' => .newline,
 
             0 => .eof,
             else => Token{ .illegal = Errors.UnexpectedToken },

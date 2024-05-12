@@ -23,6 +23,7 @@ pub const Errors = enum {
 pub const Token = union(enum) {
     illegal: Errors,
     eof,
+    newline,
 
     number,
     numbar,
@@ -232,6 +233,7 @@ pub const Token = union(enum) {
         return switch (self.*) {
             .illegal => "illegal",
             .eof => "eof",
+            .newline => "newline",
 
             .number => "number",
             .numbar => "numbar",

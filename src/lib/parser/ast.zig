@@ -47,6 +47,14 @@ pub const ExpressionNodeValueOption = union(enum) {
     Mod: ModNode,
     Biggr: BiggrNode,
     Smallr: SmallrNode,
+    BothOf: BothOfNode,
+    EitherOf: EitherOfNode,
+    WonOf: WonOfNode,
+    Not: NotNode,
+    AllOf: AllOfNode,
+    AnyOf: AnyOfNode,
+    BothSaem: BothSaemNode,
+    Diffrint: DiffrintNode,
 };
 
 pub const ExpressionNode = struct {
@@ -155,6 +163,75 @@ pub const BiggrNode = struct {
 };
 
 pub const SmallrNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const BothOfNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const EitherOfNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const WonOfNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const NotNode = struct {
+    expression: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const AllOfNode = struct {
+    expressions: []ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const AnyOfNode = struct {
+    expressions: []ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const BothSaemNode = struct {
+    left: *const ExpressionNode,
+    right: *const ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const DiffrintNode = struct {
     left: *const ExpressionNode,
     right: *const ExpressionNode,
 
