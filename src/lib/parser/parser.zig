@@ -40,11 +40,13 @@ const IntermediateParserError = error{
     ParseBothSaemError,
     ParseDiffrintError,
     ParseSmooshError,
+    ParseMaekError,
 
     ParseKTHXBYE_WordError,
 
     ParseVariableDeclarationError,
     ParseVariableAssignmentError,
+    ParseVariableCastError,
 };
 
 pub const ParserReturn = struct {
@@ -203,6 +205,18 @@ pub const Parser = struct {
             } };
         }
 
+        const variable_cast = self.parse_variable_cast() catch null;
+        if (variable_cast != null) {
+            if (!self.check_ending() and !self.check("word_r")) {
+                self.create_error(ParserError{ .message = "Expected comma or newline to end statement", .token = self.peek() });
+                return IntermediateParserError.ParseStatementError;
+            }
+
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption {
+                .VariableCast = variable_cast.?,
+            } };
+        }
+
         const expression = self.parse_expression() catch null;
         if (expression != null) {
             if (!self.check_ending()) {
@@ -348,6 +362,12 @@ pub const Parser = struct {
         if (self.check("word_smoosh")) {
             return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
                 .Smoosh = try self.parse_smoosh(),
+            } };
+        }
+
+        if (self.check("word_maek")) {
+            return ast.ExpressionNode{ .option = ast.ExpressionNodeValueOption{
+                .Maek = try self.parse_maek(),
             } };
         }
 
@@ -1115,6 +1135,74 @@ pub const Parser = struct {
         };
     }
 
+    pub fn parse_maek(self: *Self) IntermediateParserError!ast.MaekNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_maek") catch {
+            self.create_error(ParserError{ .message = "Expected MAEK keyword", .token = self.peek() });
+            return IntermediateParserError.ParseMaekError;
+        };
+
+        const expression = self.parse_expression() catch null;
+        if (expression == null) {
+            self.create_error(ParserError{ .message = "Expected Expression for MAEK", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseMaekError;
+            return IntermediateParserError.ParseMaekError;
+        }
+
+        _ = self.consume("word_a") catch {
+            self.create_error(ParserError{ .message = "Expected A keyword for MAEK", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseMaekError;
+            return IntermediateParserError.ParseMaekError;
+        };
+
+        const number = self.consume("number") catch null;
+        if (number != null) {
+            return ast.MaekNode{
+                .expression = &expression.?,
+                .cast_type = number.?,
+            };
+        }
+
+        const numbar = self.consume("numbar") catch null;
+        if (numbar != null) {
+            return ast.MaekNode{
+                .expression = &expression.?,
+                .cast_type = numbar.?,
+            };
+        }
+
+        const yarn = self.consume("yarn") catch null;
+        if (yarn != null) {
+            return ast.MaekNode{
+                .expression = &expression.?,
+                .cast_type = yarn.?,
+            };
+        }
+
+        const troof = self.consume("troof") catch null;
+        if (troof != null) {
+            return ast.MaekNode{
+                .expression = &expression.?,
+                .cast_type = troof.?,
+            };
+        }
+
+        const noob = self.consume("noob") catch null;
+        if (noob != null) {
+            return ast.MaekNode{
+                .expression = &expression.?,
+                .cast_type = noob.?,
+            };
+        }
+
+        self.create_error(ParserError{ .message = "Expected valid type for MAEK", .token = self.peek() });
+        self.reset(start) catch return IntermediateParserError.ParseMaekError;
+        return IntermediateParserError.ParseMaekError;
+    }
+
     pub fn parse_KTHXBYE_word(self: *Self) IntermediateParserError!ast.KTHXBYE_WordNode {
         self.next_level();
         defer self.prev_level();
@@ -1208,35 +1296,43 @@ pub const Parser = struct {
     }
 
     pub fn parse_variable_assignment(self: *Self) IntermediateParserError!ast.VariableAssignmentNode {
+        const start = self.current;
+
         self.next_level();
         defer self.prev_level();
         const identifier = self.consume("identifier") catch null;
         var var_dec: ?ast.VariableDeclarationNode = null;
+        var var_cast: ?ast.VariableCastNode = null;
         if (identifier == null) {
             if (self.stmts.items.len > 0) {
                 switch (self.stmts.items[self.stmts.items.len - 1].option) {
                     .VariableDeclaration => {
                         var_dec = self.stmts.items[self.stmts.items.len - 1].option.VariableDeclaration;
                     },
+                    .VariableCast => {
+                        var_cast = self.stmts.items[self.stmts.items.len - 1].option.VariableCast;
+                    },
                     else => {
-                        self.create_error(ParserError{ .message = "Expected identifier or variable decleration for variable assignment", .token = self.peek() });
+                        self.create_error(ParserError{ .message = "Expected identifier, variable decleration, or variable cast for variable assignment", .token = self.peek() });
                         return IntermediateParserError.ParseVariableAssignmentError;
                     },
                 }
             } else {
-                self.create_error(ParserError{ .message = "Expected identifier or variable decleration for variable assignment", .token = self.peek() });
+                self.create_error(ParserError{ .message = "Expected identifier, variable decleration, or variable cast for variable assignment", .token = self.peek() });
                 return IntermediateParserError.ParseVariableAssignmentError;
             }
         }
 
         _ = self.consume("word_r") catch {
             self.create_error(ParserError{ .message = "Expected R to assign variable", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseVariableAssignmentError;
             return IntermediateParserError.ParseVariableAssignmentError;
         };
 
         const expression = self.parse_expression() catch null;
         if (expression == null) {
             self.create_error(ParserError{ .message = "Expected expression for variable assignment", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseVariableAssignmentError;
             return IntermediateParserError.ParseVariableAssignmentError;
         }
 
@@ -1249,12 +1345,89 @@ pub const Parser = struct {
                 .expression = expression.?,
             };
         }
+        if (var_cast != null) {
+            return ast.VariableAssignmentNode{
+                .variable = ast.VariableAssignmentNodeVariableOption{
+                    .VariableCast = var_cast.?,
+                },
+                .expression = expression.?,
+            };
+        }
         return ast.VariableAssignmentNode{
             .variable = ast.VariableAssignmentNodeVariableOption{
                 .Identifier = identifier.?,
             },
             .expression = expression.?,
         };
+    }
+
+    pub fn parse_variable_cast(self: *Self) IntermediateParserError!ast.VariableCastNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        const identifier = self.consume("identifier") catch null;
+        var var_dec: ?ast.VariableDeclarationNode = null;
+        if (identifier == null) {
+            if (self.stmts.items.len > 0) {
+                switch (self.stmts.items[self.stmts.items.len - 1].option) {
+                    .VariableDeclaration => {
+                        var_dec = self.stmts.items[self.stmts.items.len - 1].option.VariableDeclaration;
+                    },
+                    else => {
+                        self.create_error(ParserError{ .message = "Expected identifier or variable decleration for variable cast", .token = self.peek() });
+                        return IntermediateParserError.ParseVariableAssignmentError;
+                    },
+                }
+            } else {
+                self.create_error(ParserError{ .message = "Expected identifier or variable decleration for variable cast", .token = self.peek() });
+                return IntermediateParserError.ParseVariableAssignmentError;
+            }
+        }
+
+        _ = self.consume("word_is") catch {
+            self.create_error(ParserError{ .message = "Expected IS to cast variable", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseVariableCastError;
+            return IntermediateParserError.ParseVariableCastError;
+        };
+
+        _ = self.consume("word_now") catch {
+            self.create_error(ParserError{ .message = "Expected NOW to cast variable", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseVariableCastError;
+            return IntermediateParserError.ParseVariableCastError;
+        };
+
+        _ = self.consume("word_a") catch {
+            self.create_error(ParserError{ .message = "Expected A to cast variable", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseVariableCastError;
+            return IntermediateParserError.ParseVariableCastError;
+        };
+
+        self.skip_newline();
+        if (self.check("number") or self.check("numbar") or self.check("yarn") or self.check("troof") or self.check("noob")) {
+            _ = try self.advance();
+            const token = ast.TokenNode{ .token = self.previous() };
+
+            if (identifier != null) {
+                return ast.VariableCastNode{
+                    .variable = ast.VariableCastNodeVariableOption{
+                        .Identifier = identifier.?,
+                    },
+                    .cast_type = token,
+                };
+            } else {
+                return ast.VariableCastNode{
+                    .variable = ast.VariableCastNodeVariableOption{
+                        .VariableDeclaration = var_dec.?,
+                    },
+                    .cast_type = token,
+                };
+            }
+        }
+
+        self.create_error(ParserError{ .message = "Expected valid type for variable cast", .token = self.peek() });
+        self.reset(start) catch return IntermediateParserError.ParseVariableCastError;
+        return IntermediateParserError.ParseVariableCastError;
     }
 
     pub fn create_error(self: *Self, parser_error: ParserError) void {

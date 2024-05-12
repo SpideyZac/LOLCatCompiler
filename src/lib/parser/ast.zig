@@ -23,6 +23,7 @@ pub const StatementNodeValueOption = union(enum) {
     Expression: ExpressionNode,
     VariableDeclaration: VariableDeclarationNode,
     VariableAssignment: VariableAssignmentNode,
+    VariableCast: VariableCastNode,
     KTHXBYE_Word: KTHXBYE_WordNode,
 };
 
@@ -56,6 +57,7 @@ pub const ExpressionNodeValueOption = union(enum) {
     BothSaem: BothSaemNode,
     Diffrint: DiffrintNode,
     Smoosh: SmooshNode,
+    Maek: MaekNode,
 };
 
 pub const ExpressionNode = struct {
@@ -249,6 +251,15 @@ pub const SmooshNode = struct {
     }
 };
 
+pub const MaekNode = struct {
+    expression: *const ExpressionNode,
+    cast_type: TokenNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
 pub const KTHXBYE_WordNode = struct {
     token: TokenNode,
 
@@ -269,11 +280,26 @@ pub const VariableDeclarationNode = struct {
 pub const VariableAssignmentNodeVariableOption = union(enum) {
     Identifier: TokenNode,
     VariableDeclaration: VariableDeclarationNode,
+    VariableCast: VariableCastNode,
 };
 
 pub const VariableAssignmentNode = struct {
     variable: VariableAssignmentNodeVariableOption,
     expression: ExpressionNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const VariableCastNodeVariableOption = union(enum) {
+    Identifier: TokenNode,
+    VariableDeclaration: VariableDeclarationNode,
+};
+
+pub const VariableCastNode = struct {
+    variable: VariableCastNodeVariableOption,
+    cast_type: TokenNode,
 
     pub fn value() void {
         return;
