@@ -44,6 +44,7 @@ const IntermediateParserError = error{
 
     ParseKTHXBYE_WordError,
     ParseVisibleStatementError,
+    ParseGimmehStatementError,
 
     ParseVariableDeclarationError,
     ParseVariableAssignmentError,
@@ -161,7 +162,6 @@ pub const Parser = struct {
         defer self.prev_level();
         // kthxbye can also be used to terminate a program so we don't remove it
         if (self.check("word_kthxbye")) {
-            std.debug.print("{any}\n", .{self.peek()});
             if (!self.check_ending() and !self.checkAmount("eof", 1)) {
                 self.create_error(ParserError{ .message = "Expected comma or newline to end statement", .token = self.peek() });
                 return IntermediateParserError.ParseStatementError;
@@ -212,6 +212,18 @@ pub const Parser = struct {
         if (visible_statement != null) {
             return ast.StatementNode{ .option = ast.StatementNodeValueOption {
                 .VisibleStatement = visible_statement.?,
+            } };
+        }
+
+        const gimmeh_statement = self.parse_gimmeh_statement() catch null;
+        if (gimmeh_statement != null) {
+            if (!self.check_ending()) {
+                self.create_error(ParserError{ .message = "Expected comma or newline to end statement", .token = self.peek() });
+                return IntermediateParserError.ParseStatementError;
+            }
+
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption {
+                .GimmehStatement = gimmeh_statement.?,
             } };
         }
 
@@ -1471,6 +1483,28 @@ pub const Parser = struct {
         return ast.VisibleStatementNode{
             .expressions = expressions.toOwnedSlice() catch return IntermediateParserError.ParseVisibleStatementError,
             .exclamation = null,
+        };
+    }
+
+    pub fn parse_gimmeh_statement(self: *Self) IntermediateParserError!ast.GimmehStatementNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_gimmeh") catch {
+            self.create_error(ParserError{ .message = "Expected GIMMEH keyword", .token = self.peek() });
+            return IntermediateParserError.ParseGimmehStatementError;
+        };
+
+        const identifier = self.consume("identifier") catch null;
+        if (identifier == null) {
+            self.create_error(ParserError{ .message = "Expected identifier for GIMMEH", .token = self.peek() });
+            self.reset(start) catch return IntermediateParserError.ParseGimmehStatementError;
+            return IntermediateParserError.ParseGimmehStatementError;
+        }
+
+        return ast.GimmehStatementNode{
+            .identifier = identifier.?,
         };
     }
 

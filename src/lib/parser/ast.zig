@@ -26,6 +26,7 @@ pub const StatementNodeValueOption = union(enum) {
     VariableCast: VariableCastNode,
     KTHXBYE_Word: KTHXBYE_WordNode,
     VisibleStatement: VisibleStatementNode,
+    GimmehStatement: GimmehStatementNode,
 };
 
 pub const StatementNode = struct {
@@ -310,6 +311,14 @@ pub const VariableCastNode = struct {
 pub const VisibleStatementNode = struct {
     expressions: []ExpressionNode,
     exclamation: ?TokenNode,
+
+    pub fn value() void {
+        return;
+    }
+};
+
+pub const GimmehStatementNode = struct {
+    identifier: TokenNode,
 
     pub fn value() void {
         return;

@@ -18,7 +18,7 @@ pub fn main() !void {
     // );
     // defer std.heap.page_allocator.free(contents);
 
-    const contents = "HAI 1.2\nVISIBLE \"Hello\" \" world\"!, KTHXBYE";
+    const contents = "HAI 1.2\nGIMMEH x, KTHXBYE";
 
     // Initalize Lexer on Contents
     var lexer = Lexer.init(contents);
