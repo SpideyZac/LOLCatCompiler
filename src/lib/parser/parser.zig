@@ -43,6 +43,7 @@ const IntermediateParserError = error{
     ParseMaekError,
 
     ParseKTHXBYE_WordError,
+    ParseVisibleStatementError,
 
     ParseVariableDeclarationError,
     ParseVariableAssignmentError,
@@ -87,7 +88,7 @@ pub const Parser = struct {
                 if (i == j) {
                     continue;
                 }
-                if (e2.token.index >= e.token.index) {
+                if (e2.token.index >= e.token.index and parser.levels.items[j] == parser.levels.items[i]) {
                     foundMatch = true;
                 }
             }
@@ -160,6 +161,7 @@ pub const Parser = struct {
         defer self.prev_level();
         // kthxbye can also be used to terminate a program so we don't remove it
         if (self.check("word_kthxbye")) {
+            std.debug.print("{any}\n", .{self.peek()});
             if (!self.check_ending() and !self.checkAmount("eof", 1)) {
                 self.create_error(ParserError{ .message = "Expected comma or newline to end statement", .token = self.peek() });
                 return IntermediateParserError.ParseStatementError;
@@ -203,6 +205,13 @@ pub const Parser = struct {
 
             return ast.StatementNode{ .option = ast.StatementNodeValueOption {
                 .VariableCast = variable_cast.?,
+            } };
+        }
+
+        const visible_statement = self.parse_visible_statement() catch null;
+        if (visible_statement != null) {
+            return ast.StatementNode{ .option = ast.StatementNodeValueOption {
+                .VisibleStatement = visible_statement.?,
             } };
         }
 
@@ -953,7 +962,6 @@ pub const Parser = struct {
             }
 
             expressions.append(expression.?) catch {};
-            std.debug.print("{any}\n", .{&(expression.?)});
 
             self.skip_newline();
             if (self.check("word_an")) {
@@ -1417,6 +1425,53 @@ pub const Parser = struct {
         self.create_error(ParserError{ .message = "Expected valid type for variable cast", .token = self.peek() });
         self.reset(start) catch return IntermediateParserError.ParseVariableCastError;
         return IntermediateParserError.ParseVariableCastError;
+    }
+
+    pub fn parse_visible_statement(self: *Self) IntermediateParserError!ast.VisibleStatementNode {
+        const start = self.current;
+
+        self.next_level();
+        defer self.prev_level();
+        _ = self.consume("word_visible") catch {
+            self.create_error(ParserError{ .message = "Expected VISIBLE keyword", .token = self.peek() });
+            return IntermediateParserError.ParseVisibleStatementError;
+        };
+
+        var expressions = std.ArrayList(ast.ExpressionNode).init(allocator);
+        defer expressions.deinit();
+        while (!self.isAtEnd()) {
+            const expression = self.parse_expression() catch null;
+            if (expression == null) {
+                self.create_error(ParserError{ .message = "Expected Expression for VISIBLE", .token = self.peek() });
+                self.reset(start) catch return IntermediateParserError.ParseVisibleStatementError;
+                return IntermediateParserError.ParseVisibleStatementError;
+            }
+
+            expressions.append(expression.?) catch {};
+
+            if (self.check_ending() or self.check("exclamationMark")) {
+                break;
+            }
+        }
+
+        const exclamation = self.consume("exclamationMark") catch null;
+        if (exclamation != null) {
+            if (!self.check_ending()) {
+                self.create_error(ParserError{ .message = "Expected comma or newline to end statement", .token = self.peek() });
+                self.reset(start) catch return IntermediateParserError.ParseVisibleStatementError;
+                return IntermediateParserError.ParseVisibleStatementError;
+            }
+
+            return ast.VisibleStatementNode{
+                .expressions = expressions.toOwnedSlice() catch return IntermediateParserError.ParseVisibleStatementError,
+                .exclamation = exclamation.?,
+            };
+        }
+
+        return ast.VisibleStatementNode{
+            .expressions = expressions.toOwnedSlice() catch return IntermediateParserError.ParseVisibleStatementError,
+            .exclamation = null,
+        };
     }
 
     pub fn create_error(self: *Self, parser_error: ParserError) void {
