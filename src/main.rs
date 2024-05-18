@@ -12,5 +12,6 @@ fn main() {
 
     if l::Lexer::has_errors(&tokens) {
         println!("{:#?}\n\n", l::Lexer::get_first_error(&tokens).unwrap());
+        return;
     }
 }
