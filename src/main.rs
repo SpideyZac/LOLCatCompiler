@@ -1,9 +1,11 @@
 pub mod lexer;
+pub mod parser;
 
 use crate::lexer::lexer as l;
+use crate::parser::parser as p;
 
 fn main() {
-    let contents = "HAI 1.2\nI HAS A var ITZ 0\nIM IN YR loop UPPIN YR var TIL BOTH SAEM var AN 10,VISIBLE var \" Yessir\"\nIM OUTTA YR loop\nKTHXBYE";
+    let contents = "0";
 
     let mut l = l::Lexer::init(contents);
     let tokens = l.get_tokens();
