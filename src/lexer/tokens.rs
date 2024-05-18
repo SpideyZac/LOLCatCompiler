@@ -2,10 +2,8 @@
 pub enum Errors {
     UnrecognizedToken,
     UnexpectedToken,
-    CompilerError,
     UnterminatedMultiLineComment,
     UnterminatedString,
-    Unknown,
 }
 
 impl std::error::Error for Errors {}
@@ -15,10 +13,35 @@ impl std::fmt::Display for Errors {
         match self {
             Errors::UnrecognizedToken => write!(f, "Unrecognized token"),
             Errors::UnexpectedToken => write!(f, "Unexpected token"),
-            Errors::CompilerError => write!(f, "Compiler error"),
             Errors::UnterminatedMultiLineComment => write!(f, "Unterminated multi-line comment"),
             Errors::UnterminatedString => write!(f, "Unterminated string"),
-            Errors::Unknown => write!(f, "Unknown error"),
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Token {
+    Illegal(Errors),
+    EOF,
+    Newline,
+
+    Number,
+    Numbar,
+    Noob,
+    Troof,
+    Yarn,
+
+    Word(String),
+
+    Comma,
+    ExclamationMark,
+    QuestionMark,
+
+    SingleLineComment,
+    MultiLineComment(String),
+
+    NumberValue(String),
+    NumbarValue(String),
+    YarnValue(String),
+    TroofValue(String),
 }
