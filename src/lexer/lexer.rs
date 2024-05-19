@@ -140,6 +140,11 @@ impl<'a> Lexer<'a> {
             "HAI" => false,
             "KTHXBYE" => false,
             "SMOOSH" => false,
+            "NUMBER" => false,
+            "NUMBAR" => false,
+            "YARN" => false,
+            "TROOF" => false,
+            "NOOB" => false,
             _ => true,
         };
     }

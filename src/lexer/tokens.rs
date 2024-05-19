@@ -25,12 +25,6 @@ pub enum Token {
     EOF,
     Newline,
 
-    Number,
-    Numbar,
-    Noob,
-    Troof,
-    Yarn,
-
     Word(String),
     Identifier(String),
 
@@ -53,11 +47,6 @@ impl Token {
             Token::Illegal(_) => "Illegal".to_string(),
             Token::EOF => "EOF".to_string(),
             Token::Newline => "Newline".to_string(),
-            Token::Number => "Number".to_string(),
-            Token::Numbar => "Numbar".to_string(),
-            Token::Noob => "Noob".to_string(),
-            Token::Troof => "Troof".to_string(),
-            Token::Yarn => "Yarn".to_string(),
             Token::Word(w) => format!("Word_{}", w).to_string(),
             Token::Identifier(_) => "Identifier".to_string(),
             Token::Comma => "Comma".to_string(),
