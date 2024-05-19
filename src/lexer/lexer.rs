@@ -145,6 +145,7 @@ impl<'a> Lexer<'a> {
             "YARN" => false,
             "TROOF" => false,
             "NOOB" => false,
+            "FOUND" => false,
             _ => true,
         };
     }
