@@ -5,7 +5,7 @@ use crate::lexer::lexer as l;
 use crate::parser::parser as p;
 
 fn main() {
-    let contents = "0";
+    let contents = "FAIL, 1, 1.2, \"hello world\",";
 
     let mut l = l::Lexer::init(contents);
     let tokens = l.get_tokens();
@@ -14,6 +14,17 @@ fn main() {
 
     if l::Lexer::has_errors(&tokens) {
         println!("{:#?}\n\n", l::Lexer::get_first_error(&tokens).unwrap());
+        return;
+    }
+
+    let p = p::Parser::parse(tokens);
+    println!("{:?}\n\n", p.ast);
+
+    for error in p.errors.iter() {
+        println!("{:#?}", error);
+    }
+    if p.errors.len() > 0 {
+        println!("\n\n");
         return;
     }
 }

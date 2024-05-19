@@ -82,14 +82,82 @@ impl<'a> Lexer<'a> {
         tokens::Token::NumberValue(self.src[start_pos..self.read_pos].to_string())
     }
 
-    fn read_word(&mut self) -> String {
+    pub fn special_check_identifier(&self, word: &str) -> bool {
+        return match word {
+            // ignore this crap lmao
+            "I" => false,
+            "HAS" => false,
+            "A" => false,
+            "R" => false,
+            "ITZ" => false,
+            "AN" => false,
+            "SUM" => false,
+            "OF" => false,
+            "DIFF" => false,
+            "PRODUKT" => false,
+            "QUOSHUNT" => false,
+            "MOD" => false,
+            "BIGGR" => false,
+            "SMALLR" => false,
+            "BOTH" => false,
+            "EITHER" => false,
+            "WON" => false,
+            "NOT" => false,
+            "ALL" => false,
+            "ANY" => false,
+            "MKAY" => false,
+            "SAEM" => false,
+            "DIFFRINT" => false,
+            "MAEK" => false,
+            "IS" => false,
+            "NOW" => false,
+            "VISIBLE" => false,
+            "GIMMEH" => false,
+            "IT" => false,
+            "O" => false,
+            "RLY" => false,
+            "YA" => false,
+            "NO" => false,
+            "WAI" => false,
+            "OIC" => false,
+            "MEBBE" => false,
+            "WTF" => false,
+            "OMG" => false,
+            "GTFO" => false,
+            "OMGWTF" => false,
+            "IM" => false,
+            "IN" => false,
+            "YR" => false,
+            "TIL" => false,
+            "WILE" => false,
+            "OUTTA" => false,
+            "UPPIN" => false,
+            "NERFIN" => false,
+            "HOW" => false,
+            "IZ" => false,
+            "IF" => false,
+            "U" => false,
+            "SAY" => false,
+            "SO" => false,
+            "HAI" => false,
+            "KTHXBYE" => false,
+            "SMOOSH" => false,
+            _ => true,
+        };
+    }
+
+    fn read_word(&mut self) -> tokens::Token {
         let start_pos = self.pos;
 
         while is_char(self.peek_ch()) || is_int(self.peek_ch()) {
             self.read_ch();
         }
 
-        self.src[start_pos..self.read_pos].to_string()
+        let word = &self.src[start_pos..self.read_pos];
+        if self.special_check_identifier(word) {
+            return tokens::Token::Identifier(word.to_string());
+        }
+        tokens::Token::Word(word.to_string())
     }
 
     fn read_string(&mut self) -> tokens::Token {
@@ -177,15 +245,29 @@ impl<'a> Lexer<'a> {
                     tokens::Token::Illegal(tokens::Errors::UnexpectedToken)
                 }
             }
+            'W' => {
+                if self.la("IN") {
+                    tokens::Token::TroofValue("WIN".to_string())
+                } else {
+                    self.read_word()
+                }
+            }
+            'F' => {
+                if self.la("AIL") {
+                    tokens::Token::TroofValue("FAIL".to_string())
+                } else {
+                    self.read_word()
+                }
+            }
             'A'..='Z' => {
                 if self.curr_ch == 'O' && self.la("BTW") {
                     self.read_multiline()
                 } else {
-                    tokens::Token::Word(self.read_word())
+                    self.read_word()
                 }
             }
-            'a'..='z' => tokens::Token::Word(self.read_word()),
-            '_' => tokens::Token::Word(self.read_word()),
+            'a'..='z' => self.read_word(),
+            '_' => self.read_word(),
             '"' => self.read_string(),
             ',' => tokens::Token::Comma,
             '!' => tokens::Token::ExclamationMark,
