@@ -109,8 +109,6 @@ impl<'a> Lexer<'a> {
             "SAEM" => false,
             "DIFFRINT" => false,
             "MAEK" => false,
-            "IS" => false,
-            "NOW" => false,
             "VISIBLE" => false,
             "GIMMEH" => false,
             "IT" => false,
