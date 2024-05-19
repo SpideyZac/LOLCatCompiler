@@ -1,6 +1,6 @@
 use crate::lexer::tokens;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LexedToken {
     pub token: tokens::Token,
     pub start: usize,

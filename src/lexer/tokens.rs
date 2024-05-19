@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Errors {
     UnrecognizedToken,
     UnexpectedToken,
@@ -19,7 +19,7 @@ impl std::fmt::Display for Errors {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Illegal(Errors),
     EOF,
