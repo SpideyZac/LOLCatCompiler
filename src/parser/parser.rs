@@ -46,7 +46,9 @@ impl<'a> Parser<'a> {
                     continue;
                 }
 
-                if error2.token.index >= error.token.index && p.levels[j] == p.levels[i] {
+                if (error2.token.index >= error.token.index && p.levels[j] == p.levels[i])
+                    || p.current > error.token.index
+                {
                     found_match = true;
                     break;
                 }
@@ -63,8 +65,8 @@ impl<'a> Parser<'a> {
     }
 
     pub fn check_ending(&mut self) -> bool {
-        if self.check(tokens::Token::Newline) {
-            self.consume_newline();
+        if self.check_newline() {
+            self.consume_newlines();
             return true;
         }
         if self.check(tokens::Token::Comma) {
@@ -84,11 +86,15 @@ impl<'a> Parser<'a> {
         self.prev_level();
     }
 
-    pub fn check(&self, token: tokens::Token) -> bool {
+    pub fn check(&mut self, token: tokens::Token) -> bool {
         if self.peek().token == token {
             return true;
         }
         false
+    }
+
+    pub fn check_newline(&self) -> bool {
+        self.peek().token == tokens::Token::Newline
     }
 
     pub fn special_check(&self, name: &str) -> bool {
@@ -117,15 +123,7 @@ impl<'a> Parser<'a> {
         self.current = num;
     }
 
-    pub fn skip_newline(&mut self) {
-        while self.check(tokens::Token::Newline) {
-            self.advance();
-        }
-    }
-
     pub fn consume(&mut self, token: tokens::Token) -> Option<ast::TokenNode> {
-        self.skip_newline();
-
         if self.check(token) {
             self.advance();
             return Some(ast::TokenNode {
@@ -136,8 +134,6 @@ impl<'a> Parser<'a> {
     }
 
     pub fn special_consume(&mut self, name: &str) -> Option<ast::TokenNode> {
-        self.skip_newline();
-
         if self.special_check(name) {
             self.advance();
             return Some(ast::TokenNode {
@@ -147,14 +143,10 @@ impl<'a> Parser<'a> {
         None
     }
 
-    pub fn consume_newline(&mut self) -> Option<ast::TokenNode> {
-        if self.check(tokens::Token::Newline) {
+    pub fn consume_newlines(&mut self) {
+        while self.check_newline() {
             self.advance();
-            return Some(ast::TokenNode {
-                token: self.previous(),
-            });
         }
-        None
     }
 
     pub fn previous(&self) -> lexer::LexedToken {
@@ -177,7 +169,7 @@ impl<'a> Parser<'a> {
         None
     }
 
-    pub fn is_at_end(&self) -> bool {
+    pub fn is_at_end(&mut self) -> bool {
         self.check(tokens::Token::EOF)
     }
 }
@@ -186,6 +178,51 @@ impl<'a> Parser<'a> {
     // Node Functions
     pub fn parse_program(&mut self) -> ast::ProgramNode {
         self.next_level();
+
+        let hai = self.special_consume("Word_HAI");
+        if let None = hai {
+            self.create_error(ParserError {
+                message: "Expected HAI token to start program",
+                token: self.peek(),
+            });
+            return ast::ProgramNode {
+                statements: self.stmts.clone(),
+            };
+        }
+
+        let version = self.parse_numbar_value();
+        if let None = version {
+            self.create_error(ParserError {
+                message: "Expected valid version numbar",
+                token: self.peek(),
+            });
+            return ast::ProgramNode {
+                statements: self.stmts.clone(),
+            };
+        }
+
+        if let Some(version) = version {
+            if version.value() != 1.2 {
+                self.create_error(ParserError {
+                    message: "Expected version 1.2",
+                    token: version.token.token,
+                });
+                return ast::ProgramNode {
+                    statements: self.stmts.clone(),
+                };
+            }
+        }
+
+        if !self.check_ending() {
+            self.create_error(ParserError {
+                message: "Expected comma or newline to end statement",
+                token: self.peek(),
+            });
+            return ast::ProgramNode {
+                statements: self.stmts.clone(),
+            };
+        }
+
         while !self.is_at_end() {
             let parsed_statement = self.parse_statement();
             if let None = parsed_statement {
@@ -200,6 +237,28 @@ impl<'a> Parser<'a> {
             self.stmts.push(parsed_statement.unwrap());
         }
 
+        if self.stmts.len() == 0 {
+            self.create_error(ParserError {
+                message: "Expected KTHXBYE statement to end program",
+                token: self.peek(),
+            });
+            return ast::ProgramNode {
+                statements: self.stmts.clone(),
+            };
+        }
+        match self.stmts[self.stmts.len() - 1].value {
+            ast::StatementNodeValueOption::KTHXBYEStatement(_) => {}
+            _ => {
+                self.create_error(ParserError {
+                    message: "Expected KTHXBYE statement to end program",
+                    token: self.peek(),
+                });
+                return ast::ProgramNode {
+                    statements: self.stmts.clone(),
+                };
+            }
+        }
+
         self.prev_level();
         ast::ProgramNode {
             statements: self.stmts.clone(),
@@ -208,6 +267,84 @@ impl<'a> Parser<'a> {
 
     pub fn parse_statement(&mut self) -> Option<ast::StatementNode> {
         self.next_level();
+
+        let variable_declaration_statement = self.parse_variable_declaration_statement();
+        if let Some(variable_declaration_statement) = variable_declaration_statement {
+            if !self.check_ending() && !self.special_check("Word_R") {
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::VariableDeclarationStatement(
+                    variable_declaration_statement,
+                ),
+            });
+        }
+
+        let variable_assignment_statement = self.parse_variable_assignment_statement();
+        if let Some(variable_assignment_statement) = variable_assignment_statement {
+            if !self.check_ending() {
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::VariableAssignmentStatement(
+                    variable_assignment_statement,
+                ),
+            });
+        }
+
+        let kthxbye_statement = self.special_consume("Word_KTHXBYE");
+        if let Some(kthxbye_statement) = kthxbye_statement {
+            if !self.check_ending() && !self.is_at_end() {
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::KTHXBYEStatement(kthxbye_statement),
+            });
+        }
+
+        let visible_statement = self.parse_visible_statement();
+        if let Some(visible_statement) = visible_statement {
+            // visible checks for ending itself
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::VisibleStatement(visible_statement),
+            });
+        }
+
+        let gimmeh_statement = self.parse_gimmeh_statement();
+        if let Some(gimmeh_statement) = gimmeh_statement {
+            if !self.check_ending() {
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::GimmehStatement(gimmeh_statement),
+            });
+        }
 
         let expression = self.parse_expression();
         if let Some(expression) = expression {
@@ -234,8 +371,6 @@ impl<'a> Parser<'a> {
 
     pub fn parse_expression(&mut self) -> Option<ast::ExpressionNode> {
         self.next_level();
-
-        self.skip_newline();
 
         if self.special_check("NumberValue") {
             if let Some(number_value) = self.parse_number_value() {
@@ -342,5 +477,254 @@ impl<'a> Parser<'a> {
             token: self.peek(),
         });
         None
+    }
+
+    pub fn parse_variable_declaration_statement(
+        &mut self,
+    ) -> Option<ast::VariableDeclarationStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_I") {
+            self.create_error(ParserError {
+                message: "Expected I keyword to declare variable",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_HAS") {
+            self.create_error(ParserError {
+                message: "Expected HAS keyword to declare variable",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_A") {
+            self.create_error(ParserError {
+                message: "Expected A keyword to declare variable",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let identifier = self.special_consume("Identifier");
+        if let None = identifier {
+            self.create_error(ParserError {
+                message: "Expected identifier for variable declaration",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_ITZ") {
+            self.create_error(ParserError {
+                message: "Expected ITZ keyword to declare variable",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let Some(type_) = self.special_consume("Word_NUMBER") {
+            self.prev_level();
+            return Some(ast::VariableDeclarationStatementNode {
+                identifier: identifier.unwrap(),
+                type_,
+            });
+        }
+
+        if let Some(type_) = self.special_consume("Word_NUMBAR") {
+            self.prev_level();
+            return Some(ast::VariableDeclarationStatementNode {
+                identifier: identifier.unwrap(),
+                type_,
+            });
+        }
+
+        if let Some(type_) = self.special_consume("Word_YARN") {
+            self.prev_level();
+            return Some(ast::VariableDeclarationStatementNode {
+                identifier: identifier.unwrap(),
+                type_,
+            });
+        }
+
+        if let Some(type_) = self.special_consume("Word_TROOF") {
+            self.prev_level();
+            return Some(ast::VariableDeclarationStatementNode {
+                identifier: identifier.unwrap(),
+                type_,
+            });
+        }
+
+        self.create_error(ParserError {
+            message: "Expected valid type for variable declaration",
+            token: self.peek(),
+        });
+        self.reset(start);
+        None
+    }
+
+    pub fn parse_variable_assignment_statement(
+        &mut self,
+    ) -> Option<ast::VariableAssignmentStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        let identifier = self.special_consume("Identifier");
+        let mut var_dec: Option<ast::StatementNode> = None;
+
+        if let None = identifier {
+            if self.stmts.len() > 0 {
+                match self.stmts[self.stmts.len() - 1].value {
+                    ast::StatementNodeValueOption::VariableDeclarationStatement(_) => {
+                        var_dec = Some(self.stmts.pop().unwrap());
+                    }
+                    _ => {
+                        self.create_error(ParserError {
+                            message: "Expected identifier or variable declaration for variable assignment",
+                            token: self.peek(),
+                        });
+                        return None;
+                    }
+                }
+            } else {
+                self.create_error(ParserError {
+                    message: "Expected identifier or variable declaration for variable assignment",
+                    token: self.peek(),
+                });
+                return None;
+            }
+        }
+
+        if let None = self.special_consume("Word_R") {
+            self.create_error(ParserError {
+                message: "Expected R keyword to assign variable",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression = self.parse_expression();
+        if let None = expression {
+            self.create_error(ParserError {
+                message: "Expected valid expression for variable assignment",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let Some(dec) = var_dec {
+            self.prev_level();
+            match dec.value {
+                ast::StatementNodeValueOption::VariableDeclarationStatement(node) => {
+                    return Some(ast::VariableAssignmentStatementNode {
+                        variable:
+                            ast::VariableAssignmentNodeVariableOption::VariableDeclerationStatement(
+                                node,
+                            ),
+                        expression: expression.unwrap(),
+                    });
+                }
+                _ => {}
+            }
+        }
+
+        self.prev_level();
+        return Some(ast::VariableAssignmentStatementNode {
+            variable: ast::VariableAssignmentNodeVariableOption::Identifier(identifier.unwrap()),
+            expression: expression.unwrap(),
+        });
+    }
+
+    pub fn parse_visible_statement(&mut self) -> Option<ast::VisibleStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_VISIBLE") {
+            self.create_error(ParserError {
+                message: "Expected VISIBLE keyword to output to console",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        let mut expressions: Vec<ast::ExpressionNode> = Vec::new();
+        while !self.is_at_end() {
+            let expression = self.parse_expression();
+            if let None = expression {
+                self.create_error(ParserError {
+                    message: "Expected valid expression for VISIBLE statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            expressions.push(expression.unwrap());
+
+            if self.check_ending() || self.check(tokens::Token::ExclamationMark) {
+                break;
+            }
+        }
+
+        let exclamation_mark = self.consume(tokens::Token::ExclamationMark);
+        if let Some(exclamation_mark) = exclamation_mark {
+            if !self.check_ending() {
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::VisibleStatementNode {
+                expressions,
+                exclamation: Some(exclamation_mark),
+            });
+        }
+
+        self.prev_level();
+        Some(ast::VisibleStatementNode {
+            expressions,
+            exclamation: None,
+        })
+    }
+
+    pub fn parse_gimmeh_statement(&mut self) -> Option<ast::GimmehStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_GIMMEH") {
+            self.create_error(ParserError {
+                message: "Expected GIMMEH keyword to get input",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        let identifier = self.special_consume("Identifier");
+        if let None = identifier {
+            self.create_error(ParserError {
+                message: "Expected identifier for GIMMEH statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        return Some(ast::GimmehStatementNode {
+            identifier: identifier.unwrap(),
+        });
     }
 }

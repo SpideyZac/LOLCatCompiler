@@ -20,6 +20,11 @@ pub struct ProgramNode {
 #[derive(Debug, Clone)]
 pub enum StatementNodeValueOption {
     Expression(ExpressionNode),
+    VariableDeclarationStatement(VariableDeclarationStatementNode),
+    VariableAssignmentStatement(VariableAssignmentStatementNode),
+    KTHXBYEStatement(TokenNode),
+    VisibleStatement(VisibleStatementNode),
+    GimmehStatement(GimmehStatementNode),
 }
 
 #[derive(Debug, Clone)]
@@ -102,4 +107,33 @@ impl TroofValueNode {
             panic!("Expected TroofValue token")
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableDeclarationStatementNode {
+    pub identifier: TokenNode,
+    pub type_: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub enum VariableAssignmentNodeVariableOption {
+    Identifier(TokenNode),
+    VariableDeclerationStatement(VariableDeclarationStatementNode),
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableAssignmentStatementNode {
+    pub variable: VariableAssignmentNodeVariableOption,
+    pub expression: ExpressionNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct VisibleStatementNode {
+    pub expressions: Vec<ExpressionNode>,
+    pub exclamation: Option<TokenNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GimmehStatementNode {
+    pub identifier: TokenNode,
 }

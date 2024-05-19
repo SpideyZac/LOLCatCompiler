@@ -5,7 +5,7 @@ use crate::lexer::lexer as l;
 use crate::parser::parser as p;
 
 fn main() {
-    let contents = "FAIL, 1, 1.2, \"hello world\",";
+    let contents = "HAI 1.2, I HAS A x ITZ YARN \n\nR \"hello world\",GIMMEH x,VISIBLE \"hello \" \"world::)\",KTHXBYE";
 
     let mut l = l::Lexer::init(contents);
     let tokens = l.get_tokens();
