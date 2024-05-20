@@ -1,6 +1,6 @@
 {
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
-    "mcr.microsoft.com/vscode/devcontainers/rust:1": {}
+    "mcr.microsoft.com/vscode/devcontainers/rust:latest": {}
   }
 }
