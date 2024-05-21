@@ -4,7 +4,7 @@ pub mod parser;
 use crate::lexer::lexer as l;
 use crate::parser::parser as p;
 
-use rust_embed::{ Embed, EmbeddedFile };
+use rust_embed::{Embed, EmbeddedFile};
 use std::io::Write;
 
 #[derive(Embed)]
@@ -34,14 +34,22 @@ fn main() {
         }
     }
 
-    std::fs::DirBuilder::new().create(std::path::Path::new("runtime-deps")).unwrap();
+    std::fs::DirBuilder::new()
+        .create(std::path::Path::new("runtime-deps"))
+        .unwrap();
     for (i, file) in Assets::iter().enumerate() {
         let mut file = std::fs::File::create(format!("runtime-deps/{}", file)).unwrap();
 
         match i {
-            0 => file.write_all(as_exe.clone().unwrap().data.as_ref()).unwrap(),
-            1 => file.write_all(ld_exe.clone().unwrap().data.as_ref()).unwrap(),
-            2 => file.write_all(qbe_exe.clone().unwrap().data.as_ref()).unwrap(),
+            0 => file
+                .write_all(as_exe.clone().unwrap().data.as_ref())
+                .unwrap(),
+            1 => file
+                .write_all(ld_exe.clone().unwrap().data.as_ref())
+                .unwrap(),
+            2 => file
+                .write_all(qbe_exe.clone().unwrap().data.as_ref())
+                .unwrap(),
             _ => panic!("Unknown file: {:?}", file),
         }
     }
