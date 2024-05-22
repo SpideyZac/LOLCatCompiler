@@ -38,6 +38,24 @@ pub enum ExpressionNodeValueOption {
     NumbarValue(NumbarValueNode),
     YarnValue(YarnValueNode),
     TroofValue(TroofValueNode),
+    VariableReference(VariableReferenceNode),
+    SumExpression(SumExpressionNode),
+    DiffExpression(DiffExpressionNode),
+    ProduktExpression(ProduktExpressionNode),
+    QuoshuntExpression(QuoshuntExpressionNode),
+    ModExpression(ModExpressionNode),
+    BiggrExpression(BiggrExpressionNode),
+    SmallrExpression(SmallrExpressionNode),
+    BothOfExpression(BothOfExpressionNode),
+    EitherOfExpression(EitherOfExpressionNode),
+    WonOfExpression(WonOfExpressionNode),
+    NotExpression(NotExpressionNode),
+    AllOfExpression(AllOfExpressionNode),
+    AnyOfExpression(AnyOfExpressionNode),
+    BothSaemExpression(BothSaemExpressionNode),
+    DiffrintExpression(DiffrintExpressionNode),
+    SmooshExpression(SmooshExpressionNode),
+    MaekExpression(MaekExpressionNode),
 }
 
 #[derive(Debug, Clone)]
@@ -107,6 +125,109 @@ impl TroofValueNode {
             panic!("Expected TroofValue token")
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableReferenceNode {
+    pub identifier: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct SumExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DiffExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProduktExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuoshuntExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ModExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BiggrExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SmallrExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BothOfExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct EitherOfExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WonOfExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct NotExpressionNode {
+    pub expression: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AllOfExpressionNode {
+    pub expressions: Vec<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnyOfExpressionNode {
+    pub expressions: Vec<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BothSaemExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DiffrintExpressionNode {
+    pub left: Box<ExpressionNode>,
+    pub right: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SmooshExpressionNode {
+    pub expressions: Vec<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MaekExpressionNode {
+    pub type_: TokenNode,
+    pub expression: Box<ExpressionNode>,
 }
 
 #[derive(Debug, Clone)]

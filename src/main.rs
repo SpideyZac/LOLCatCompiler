@@ -54,7 +54,7 @@ fn main() {
         }
     }
 
-    let contents = "HAI 1.2, I HAS A x ITZ YARN \n\nR \"hello world\",GIMMEH x,VISIBLE \"hello \" \"world::)\",KTHXBYE";
+    let contents = "HAI 1.2, I HAS A x ITZ NUMBER R SUM OF 1 AN PRODUKT OF 2 AN 3,KTHXBYE";
 
     let mut l = l::Lexer::init(contents);
     let tokens = l.get_tokens();

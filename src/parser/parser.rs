@@ -104,6 +104,13 @@ impl<'a> Parser<'a> {
         false
     }
 
+    pub fn special_check_amount(&self, name: &str, amount: usize) -> bool {
+        if self.peek_amount(amount).token.to_name() == name.to_string() {
+            return true;
+        }
+        false
+    }
+
     pub fn check_amount(&self, token: tokens::Token, amount: usize) -> bool {
         if self.peek_amount(amount).token == token {
             return true;
@@ -408,6 +415,168 @@ impl<'a> Parser<'a> {
             }
         }
 
+        if self.special_check("Identifier") {
+            if let Some(variable_reference) = self.parse_variable_reference_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::VariableReference(variable_reference),
+                });
+            }
+        }
+
+        if self.special_check("Word_SUM") {
+            if let Some(sum_expression) = self.parse_sum_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::SumExpression(sum_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_DIFF") {
+            if let Some(diff_expression) = self.parse_diff_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::DiffExpression(diff_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_PRODUKT") {
+            if let Some(produkt_expression) = self.parse_produkt_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::ProduktExpression(produkt_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_QUOSHUNT") {
+            if let Some(quoshunt_expression) = self.parse_quoshunt_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::QuoshuntExpression(quoshunt_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_MOD") {
+            if let Some(mod_expression) = self.parse_mod_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::ModExpression(mod_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_BIGGR") {
+            if let Some(biggr_expression) = self.parse_biggr_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::BiggrExpression(biggr_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_SMALLR") {
+            if let Some(smallr_expression) = self.parse_smallr_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::SmallrExpression(smallr_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_BOTH") && self.special_check_amount("Word_OF", 1) {
+            if let Some(both_of_expression) = self.parse_both_of_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::BothOfExpression(both_of_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_EITHER") {
+            if let Some(either_expression) = self.parse_either_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::EitherOfExpression(either_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_WON") {
+            if let Some(won_expression) = self.parse_won_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::WonOfExpression(won_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_NOT") {
+            if let Some(not_expression) = self.parse_not_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::NotExpression(not_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_ALL") {
+            if let Some(all_of_expression) = self.parse_all_of_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::AllOfExpression(all_of_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_ANY") {
+            if let Some(any_of_expression) = self.parse_any_of_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::AnyOfExpression(any_of_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_BOTH") && self.special_check_amount("Word_SAEM", 1) {
+            if let Some(both_saem_expression) = self.parse_both_saem_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::BothSaemExpression(both_saem_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_DIFFRINT") {
+            if let Some(diffrint_expression) = self.parse_diffrint_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::DiffrintExpression(diffrint_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_SMOOSH") {
+            if let Some(smoosh_expression) = self.parse_smoosh_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::SmooshExpression(smoosh_expression),
+                });
+            }
+        }
+
+        if self.special_check("Word_MAEK") {
+            if let Some(maek_expression) = self.parse_maek_expression() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::MaekExpression(maek_expression),
+                });
+            }
+        }
+
         self.create_error(ParserError {
             message: "Expected valid expression",
             token: self.peek(),
@@ -476,6 +645,949 @@ impl<'a> Parser<'a> {
             message: "Expected troof value token",
             token: self.peek(),
         });
+        None
+    }
+
+    pub fn parse_variable_reference_expression(&mut self) -> Option<ast::VariableReferenceNode> {
+        self.next_level();
+
+        let identifier = self.special_consume("Identifier");
+        if let Some(identifier) = identifier {
+            self.prev_level();
+            return Some(ast::VariableReferenceNode { identifier });
+        }
+
+        self.create_error(ParserError {
+            message: "Expected identifier for variable reference",
+            token: self.peek(),
+        });
+        None
+    }
+
+    pub fn parse_sum_expression(&mut self) -> Option<ast::SumExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_SUM") {
+            self.create_error(ParserError {
+                message: "Expected SUM keyword for sum expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for sum expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for sum expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for sum expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for sum expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::SumExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_diff_expression(&mut self) -> Option<ast::DiffExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_DIFF") {
+            self.create_error(ParserError {
+                message: "Expected DIFF keyword for diff expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for diff expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for diff expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for diff expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for diff expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::DiffExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_produkt_expression(&mut self) -> Option<ast::ProduktExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_PRODUKT") {
+            self.create_error(ParserError {
+                message: "Expected PRODUKT keyword for product expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for product expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for product expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for product expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for product expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::ProduktExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_quoshunt_expression(&mut self) -> Option<ast::QuoshuntExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_QUOSHUNT") {
+            self.create_error(ParserError {
+                message: "Expected QUOSHUNT keyword for quotient expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for quotient expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for quotient expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for quotient expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for quotient expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::QuoshuntExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_mod_expression(&mut self) -> Option<ast::ModExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_MOD") {
+            self.create_error(ParserError {
+                message: "Expected MOD keyword for modulo expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for modulo expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for modulo expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for modulo expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for modulo expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::ModExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_biggr_expression(&mut self) -> Option<ast::BiggrExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_BIGGR") {
+            self.create_error(ParserError {
+                message: "Expected BIGGR keyword for greater expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for greater expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for greater expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for greater expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for greater expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::BiggrExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_smallr_expression(&mut self) -> Option<ast::SmallrExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_SMALLR") {
+            self.create_error(ParserError {
+                message: "Expected SMALLR keyword for lesser expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for lesser expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for lesser expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for lesser expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for lesser expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::SmallrExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_both_of_expression(&mut self) -> Option<ast::BothOfExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_BOTH") {
+            self.create_error(ParserError {
+                message: "Expected BOTH keyword for both of expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for both of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for both of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for both of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for both of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::BothOfExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_either_expression(&mut self) -> Option<ast::EitherOfExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_EITHER") {
+            self.create_error(ParserError {
+                message: "Expected EITHER keyword for either of expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for either of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for either of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for either of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for either of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::EitherOfExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_won_expression(&mut self) -> Option<ast::WonOfExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_WON") {
+            self.create_error(ParserError {
+                message: "Expected WON keyword for won of expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for won of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for won of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for won of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for won of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::WonOfExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_not_expression(&mut self) -> Option<ast::NotExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_NOT") {
+            self.create_error(ParserError {
+                message: "Expected NOT keyword for not expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        let expression = self.parse_expression();
+        if let None = expression {
+            self.create_error(ParserError {
+                message: "Expected valid expression for not expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::NotExpressionNode {
+            expression: Box::new(expression.unwrap()),
+        })
+    }
+
+    pub fn parse_all_of_expression(&mut self) -> Option<ast::AllOfExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_ALL") {
+            self.create_error(ParserError {
+                message: "Expected ALL keyword for all of expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for all of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut expressions = Vec::new();
+        while !self.is_at_end() {
+            let expression = self.parse_expression();
+            if let None = expression {
+                self.create_error(ParserError {
+                    message: "Expected valid expression for all of expression",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+            expressions.push(expression.unwrap());
+
+            if self.special_check("Word_AN") {
+                self.special_consume("Word_AN");
+            } else {
+                break;
+            }
+        }
+
+        if let None = self.special_consume("Word_MKAY") {
+            self.create_error(ParserError {
+                message: "Expected MKAY keyword for all of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::AllOfExpressionNode { expressions })
+    }
+
+    pub fn parse_any_of_expression(&mut self) -> Option<ast::AnyOfExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_ANY") {
+            self.create_error(ParserError {
+                message: "Expected ANY keyword for any of expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OF") {
+            self.create_error(ParserError {
+                message: "Expected OF keyword for any of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut expressions = Vec::new();
+        while !self.is_at_end() {
+            let expression = self.parse_expression();
+            if let None = expression {
+                self.create_error(ParserError {
+                    message: "Expected valid expression for any of expression",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+            expressions.push(expression.unwrap());
+
+            if self.special_check("Word_AN") {
+                self.special_consume("Word_AN");
+            } else {
+                break;
+            }
+        }
+
+        if let None = self.special_consume("Word_MKAY") {
+            self.create_error(ParserError {
+                message: "Expected MKAY keyword for any of expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::AnyOfExpressionNode { expressions })
+    }
+
+    pub fn parse_both_saem_expression(&mut self) -> Option<ast::BothSaemExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_BOTH") {
+            self.create_error(ParserError {
+                message: "Expected BOTH keyword for both saem expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_SAEM") {
+            self.create_error(ParserError {
+                message: "Expected SAEM keyword for both saem expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for both saem expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for both saem expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for both saem expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::BothSaemExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_diffrint_expression(&mut self) -> Option<ast::DiffrintExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_DIFFRINT") {
+            self.create_error(ParserError {
+                message: "Expected DIFFRINT keyword for different expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        let expression1 = self.parse_expression();
+        if let None = expression1 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for different expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_AN") {
+            self.create_error(ParserError {
+                message: "Expected AN keyword for different expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression2 = self.parse_expression();
+        if let None = expression2 {
+            self.create_error(ParserError {
+                message: "Expected valid expression for different expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::DiffrintExpressionNode {
+            left: Box::new(expression1.unwrap()),
+            right: Box::new(expression2.unwrap()),
+        })
+    }
+
+    pub fn parse_smoosh_expression(&mut self) -> Option<ast::SmooshExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_SMOOSH") {
+            self.create_error(ParserError {
+                message: "Expected SMOOSH keyword for smoosh expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        let mut expressions = Vec::new();
+        while !self.is_at_end() {
+            let expression = self.parse_expression();
+            if let None = expression {
+                self.create_error(ParserError {
+                    message: "Expected valid expression for smoosh expression",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+            expressions.push(expression.unwrap());
+
+            if self.special_check("Word_AN") {
+                self.special_consume("Word_AN");
+            } else {
+                break;
+            }
+        }
+
+        if let None = self.special_consume("Word_MKAY") {
+            self.create_error(ParserError {
+                message: "Expected MKAY keyword for smoosh expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::SmooshExpressionNode { expressions })
+    }
+
+    pub fn parse_maek_expression(&mut self) -> Option<ast::MaekExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_MAEK") {
+            self.create_error(ParserError {
+                message: "Expected MAEK keyword for type conversion expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        let expression = self.parse_expression();
+        if let None = expression {
+            self.create_error(ParserError {
+                message: "Expected valid expression for type conversion expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_A") {
+            self.create_error(ParserError {
+                message: "Expected A keyword for type conversion expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let Some(type_) = self.special_consume("Word_NUMBER") {
+            self.prev_level();
+            return Some(ast::MaekExpressionNode {
+                expression: Box::new(expression.unwrap()),
+                type_,
+            });
+        }
+
+        if let Some(type_) = self.special_consume("Word_NUMBAR") {
+            self.prev_level();
+            return Some(ast::MaekExpressionNode {
+                expression: Box::new(expression.unwrap()),
+                type_,
+            });
+        }
+
+        if let Some(type_) = self.special_consume("Word_YARN") {
+            self.prev_level();
+            return Some(ast::MaekExpressionNode {
+                expression: Box::new(expression.unwrap()),
+                type_,
+            });
+        }
+
+        if let Some(type_) = self.special_consume("Word_TROOF") {
+            self.prev_level();
+            return Some(ast::MaekExpressionNode {
+                expression: Box::new(expression.unwrap()),
+                type_,
+            });
+        }
+
+        self.create_error(ParserError {
+            message: "Expected valid type for type conversion expression",
+            token: self.peek(),
+        });
+        self.reset(start);
         None
     }
 
