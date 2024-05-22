@@ -54,7 +54,7 @@ fn main() {
         }
     }
 
-    let contents = "HAI 1.2,I IZ test YR 1 AN YR 2 MKAY,KTHXBYE";
+    let contents = "HAI 1.2,O RLY? YA RLY, VISIBLE \"yes\", MEBBE 1, VISIBLE \"mebbe\", NO WAI, VISIBLE \"no\", OIC,KTHXBYE";
 
     let mut l = l::Lexer::init(contents);
     let tokens = l.get_tokens();

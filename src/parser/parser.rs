@@ -353,6 +353,22 @@ impl<'a> Parser<'a> {
             });
         }
 
+        let if_statement = self.parse_if_statement();
+        if let Some(if_statement) = if_statement {
+            if !self.check_ending() {
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::IfStatement(if_statement),
+            });
+        }
+
         let expression = self.parse_expression();
         if let Some(expression) = expression {
             if !self.check_ending() {
@@ -1932,5 +1948,206 @@ impl<'a> Parser<'a> {
         return Some(ast::GimmehStatementNode {
             identifier: identifier.unwrap(),
         });
+    }
+
+    pub fn parse_if_statement(&mut self) -> Option<ast::IfStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_O") {
+            self.create_error(ParserError {
+                message: "Expected O keyword to start if statement",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_RLY") {
+            self.create_error(ParserError {
+                message: "Expected RLY keyword to start if statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.consume(tokens::Token::QuestionMark) {
+            self.create_error(ParserError {
+                message: "Expected ? to start if statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_YA") {
+            self.create_error(ParserError {
+                message: "Expected YA keyword to start if statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_RLY") {
+            self.create_error(ParserError {
+                message: "Expected RLY keyword to start if statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if !self.check_ending() {
+            self.create_error(ParserError {
+                message: "Expected newline or comma to end if statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut statements = Vec::new();
+        while !self.is_at_end() {
+            let statement = self.parse_statement();
+            if let None = statement {
+                self.create_error(ParserError {
+                    message: "Expected valid statement for if statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            statements.push(statement.unwrap());
+
+            if self.special_check("Word_OIC")
+                || (self.special_check("Word_NO") && self.special_check_amount("Word_WAI", 1))
+                || self.special_check("Word_MEBBE")
+            {
+                break;
+            }
+        }
+
+        let mut else_if_nodes: Vec<ast::ElseIfStatementNode> = Vec::new();
+        while !self.is_at_end() {
+            if self.special_check("Word_OIC")
+                || (self.special_check("Word_NO") && self.special_check_amount("Word_WAI", 1))
+            {
+                break;
+            }
+
+            let statement = self.parse_statement();
+            if let Some(s) = statement {
+                if else_if_nodes.len() == 0 {
+                    self.create_error(ParserError {
+                        message: "Expected MEBBE keyword to start else if statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+
+                let last = else_if_nodes.len() - 1;
+                else_if_nodes[last].statements.push(s);
+                continue;
+            } else if else_if_nodes.len() > 0 {
+                self.create_error(ParserError {
+                    message: "Expected valid statement for else if statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            if let None = self.special_consume("Word_MEBBE") {
+                self.create_error(ParserError {
+                    message: "Expected MEBBE keyword to start else if statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            } else {
+                let expression = self.parse_expression();
+                if let None = expression {
+                    self.create_error(ParserError {
+                        message: "Expected valid expression for else if statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+
+                else_if_nodes.push(ast::ElseIfStatementNode {
+                    expression: expression.unwrap(),
+                    statements: Vec::new(),
+                });
+
+                if !self.check_ending() {
+                    self.create_error(ParserError {
+                        message: "Expected newline or comma to end else if statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+            }
+        }
+
+        let mut else_statements = Vec::new();
+        if self.special_check("Word_NO") && self.special_check_amount("Word_WAI", 1) {
+            self.special_consume("Word_NO");
+            self.special_consume("Word_WAI");
+
+            if !self.check_ending() {
+                self.create_error(ParserError {
+                    message: "Expected newline or comma to end else statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            while !self.is_at_end() {
+                let statement = self.parse_statement();
+                if let None = statement {
+                    self.create_error(ParserError {
+                        message: "Expected valid statement for else statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+
+                else_statements.push(statement.unwrap());
+
+                if self.special_check("Word_OIC") {
+                    break;
+                }
+            }
+        }
+
+        if let None = self.special_consume("Word_OIC") {
+            self.create_error(ParserError {
+                message: "Expected OIC keyword to end if statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        if else_statements.len() > 0 {
+            return Some(ast::IfStatementNode {
+                statements,
+                else_ifs: else_if_nodes,
+                else_: Some(else_statements),
+            });
+        }
+        Some(ast::IfStatementNode {
+            statements,
+            else_ifs: else_if_nodes,
+            else_: None,
+        })
     }
 }

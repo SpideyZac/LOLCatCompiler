@@ -25,6 +25,7 @@ pub enum StatementNodeValueOption {
     KTHXBYEStatement(TokenNode),
     VisibleStatement(VisibleStatementNode),
     GimmehStatement(GimmehStatementNode),
+    IfStatement(IfStatementNode),
 }
 
 #[derive(Debug, Clone)]
@@ -270,4 +271,17 @@ pub struct VisibleStatementNode {
 #[derive(Debug, Clone)]
 pub struct GimmehStatementNode {
     pub identifier: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct ElseIfStatementNode {
+    pub expression: ExpressionNode,
+    pub statements: Vec<StatementNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IfStatementNode {
+    pub statements: Vec<StatementNode>,
+    pub else_ifs: Vec<ElseIfStatementNode>,
+    pub else_: Option<Vec<StatementNode>>,
 }
