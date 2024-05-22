@@ -54,7 +54,7 @@ fn main() {
         }
     }
 
-    let contents = "HAI 1.2, I HAS A x ITZ NUMBER R SUM OF 1 AN PRODUKT OF 2 AN 3,KTHXBYE";
+    let contents = "HAI 1.2,I IZ test YR 1 AN YR 2 MKAY,KTHXBYE";
 
     let mut l = l::Lexer::init(contents);
     let tokens = l.get_tokens();

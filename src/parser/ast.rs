@@ -57,6 +57,7 @@ pub enum ExpressionNodeValueOption {
     SmooshExpression(SmooshExpressionNode),
     MaekExpression(MaekExpressionNode),
     ItReference(ItReferenceNode),
+    FunctionCallExpression(FunctionCallExpressionNode),
 }
 
 #[derive(Debug, Clone)]
@@ -234,6 +235,12 @@ pub struct MaekExpressionNode {
 #[derive(Debug, Clone)]
 pub struct ItReferenceNode {
     pub token: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionCallExpressionNode {
+    pub identifier: TokenNode,
+    pub arguments: Vec<ExpressionNode>,
 }
 
 #[derive(Debug, Clone)]

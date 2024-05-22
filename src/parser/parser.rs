@@ -377,11 +377,8 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expression(&mut self) -> Option<ast::ExpressionNode> {
-        self.next_level();
-
         if self.special_check("NumberValue") {
             if let Some(number_value) = self.parse_number_value() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::NumberValue(number_value),
                 });
@@ -390,7 +387,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("NumbarValue") {
             if let Some(numbar_value) = self.parse_numbar_value() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::NumbarValue(numbar_value),
                 });
@@ -399,7 +395,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("YarnValue") {
             if let Some(yarn_value) = self.parse_yarn_value() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::YarnValue(yarn_value),
                 });
@@ -408,7 +403,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("TroofValue") {
             if let Some(troof_value) = self.parse_troof_value() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::TroofValue(troof_value),
                 });
@@ -417,7 +411,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Identifier") {
             if let Some(variable_reference) = self.parse_variable_reference_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::VariableReference(variable_reference),
                 });
@@ -426,7 +419,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_SUM") {
             if let Some(sum_expression) = self.parse_sum_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::SumExpression(sum_expression),
                 });
@@ -435,7 +427,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_DIFF") {
             if let Some(diff_expression) = self.parse_diff_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::DiffExpression(diff_expression),
                 });
@@ -444,7 +435,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_PRODUKT") {
             if let Some(produkt_expression) = self.parse_produkt_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::ProduktExpression(produkt_expression),
                 });
@@ -453,7 +443,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_QUOSHUNT") {
             if let Some(quoshunt_expression) = self.parse_quoshunt_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::QuoshuntExpression(quoshunt_expression),
                 });
@@ -462,7 +451,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_MOD") {
             if let Some(mod_expression) = self.parse_mod_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::ModExpression(mod_expression),
                 });
@@ -471,7 +459,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_BIGGR") {
             if let Some(biggr_expression) = self.parse_biggr_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::BiggrExpression(biggr_expression),
                 });
@@ -480,7 +467,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_SMALLR") {
             if let Some(smallr_expression) = self.parse_smallr_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::SmallrExpression(smallr_expression),
                 });
@@ -489,7 +475,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_BOTH") && self.special_check_amount("Word_OF", 1) {
             if let Some(both_of_expression) = self.parse_both_of_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::BothOfExpression(both_of_expression),
                 });
@@ -498,7 +483,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_EITHER") {
             if let Some(either_expression) = self.parse_either_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::EitherOfExpression(either_expression),
                 });
@@ -507,7 +491,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_WON") {
             if let Some(won_expression) = self.parse_won_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::WonOfExpression(won_expression),
                 });
@@ -516,7 +499,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_NOT") {
             if let Some(not_expression) = self.parse_not_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::NotExpression(not_expression),
                 });
@@ -525,7 +507,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_ALL") {
             if let Some(all_of_expression) = self.parse_all_of_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::AllOfExpression(all_of_expression),
                 });
@@ -534,7 +515,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_ANY") {
             if let Some(any_of_expression) = self.parse_any_of_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::AnyOfExpression(any_of_expression),
                 });
@@ -543,7 +523,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_BOTH") && self.special_check_amount("Word_SAEM", 1) {
             if let Some(both_saem_expression) = self.parse_both_saem_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::BothSaemExpression(both_saem_expression),
                 });
@@ -552,7 +531,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_DIFFRINT") {
             if let Some(diffrint_expression) = self.parse_diffrint_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::DiffrintExpression(diffrint_expression),
                 });
@@ -561,7 +539,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_SMOOSH") {
             if let Some(smoosh_expression) = self.parse_smoosh_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::SmooshExpression(smoosh_expression),
                 });
@@ -570,7 +547,6 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_MAEK") {
             if let Some(maek_expression) = self.parse_maek_expression() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::MaekExpression(maek_expression),
                 });
@@ -579,9 +555,18 @@ impl<'a> Parser<'a> {
 
         if self.special_check("Word_IT") {
             if let Some(it_reference) = self.parse_it_reference() {
-                self.prev_level();
                 return Some(ast::ExpressionNode {
                     value: ast::ExpressionNodeValueOption::ItReference(it_reference),
+                });
+            }
+        }
+
+        if self.special_check("Word_I") && self.special_check_amount("Word_IZ", 1) {
+            if let Some(function_call_expression) = self.parse_function_call_expression() {
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::FunctionCallExpression(
+                        function_call_expression,
+                    ),
                 });
             }
         }
@@ -590,6 +575,7 @@ impl<'a> Parser<'a> {
             message: "Expected valid expression",
             token: self.peek(),
         });
+        self.next_level(); // prevent level from changing
         None
     }
 
@@ -1615,6 +1601,87 @@ impl<'a> Parser<'a> {
         self.prev_level();
         Some(ast::ItReferenceNode {
             token: token.unwrap(),
+        })
+    }
+
+    pub fn parse_function_call_expression(&mut self) -> Option<ast::FunctionCallExpressionNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_I") {
+            self.create_error(ParserError {
+                message: "Expected I keyword for function call expression",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_IZ") {
+            self.create_error(ParserError {
+                message: "Expected IZ keyword for function call expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let identifier = self.special_consume("Identifier");
+        if let None = identifier {
+            self.create_error(ParserError {
+                message: "Expected identifier for function call expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut arguments = Vec::new();
+        let mut has_args = false;
+        while !self.is_at_end() {
+            if let None = self.special_consume("Word_YR") {
+                if !has_args {
+                    break;
+                }
+                self.create_error(ParserError {
+                    message: "Expected YR keyword for function call expression",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            has_args = true;
+
+            let expression = self.parse_expression();
+            if let None = expression {
+                self.create_error(ParserError {
+                    message: "Expected valid expression for function call expression",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+            arguments.push(expression.unwrap());
+
+            if self.special_check("Word_AN") {
+                self.special_consume("Word_AN");
+            } else {
+                break;
+            }
+        }
+
+        if let None = self.special_consume("Word_MKAY") {
+            self.create_error(ParserError {
+                message: "Expected MKAY keyword for function call expression",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        Some(ast::FunctionCallExpressionNode {
+            identifier: identifier.unwrap(),
+            arguments,
         })
     }
 
