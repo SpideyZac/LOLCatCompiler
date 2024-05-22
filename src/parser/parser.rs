@@ -577,6 +577,15 @@ impl<'a> Parser<'a> {
             }
         }
 
+        if self.special_check("Word_IT") {
+            if let Some(it_reference) = self.parse_it_reference() {
+                self.prev_level();
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::ItReference(it_reference),
+                });
+            }
+        }
+
         self.create_error(ParserError {
             message: "Expected valid expression",
             token: self.peek(),
@@ -1589,6 +1598,24 @@ impl<'a> Parser<'a> {
         });
         self.reset(start);
         None
+    }
+
+    pub fn parse_it_reference(&mut self) -> Option<ast::ItReferenceNode> {
+        self.next_level();
+
+        let token = self.special_consume("Word_IT");
+        if let None = token {
+            self.create_error(ParserError {
+                message: "Expected IT keyword for it reference",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::ItReferenceNode {
+            token: token.unwrap(),
+        })
     }
 
     pub fn parse_variable_declaration_statement(

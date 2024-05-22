@@ -56,6 +56,7 @@ pub enum ExpressionNodeValueOption {
     DiffrintExpression(DiffrintExpressionNode),
     SmooshExpression(SmooshExpressionNode),
     MaekExpression(MaekExpressionNode),
+    ItReference(ItReferenceNode),
 }
 
 #[derive(Debug, Clone)]
@@ -228,6 +229,11 @@ pub struct SmooshExpressionNode {
 pub struct MaekExpressionNode {
     pub type_: TokenNode,
     pub expression: Box<ExpressionNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ItReferenceNode {
+    pub token: TokenNode,
 }
 
 #[derive(Debug, Clone)]
