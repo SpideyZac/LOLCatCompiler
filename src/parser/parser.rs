@@ -278,10 +278,12 @@ impl<'a> Parser<'a> {
         let variable_declaration_statement = self.parse_variable_declaration_statement();
         if let Some(variable_declaration_statement) = variable_declaration_statement {
             if !self.check_ending() && !self.special_check("Word_R") {
+                self.next_level();
                 self.create_error(ParserError {
                     message: "Expected comma or newline to end statement",
                     token: self.peek(),
                 });
+                self.prev_level();
                 return None;
             }
 
@@ -296,10 +298,12 @@ impl<'a> Parser<'a> {
         let variable_assignment_statement = self.parse_variable_assignment_statement();
         if let Some(variable_assignment_statement) = variable_assignment_statement {
             if !self.check_ending() {
+                self.next_level();
                 self.create_error(ParserError {
                     message: "Expected comma or newline to end statement",
                     token: self.peek(),
                 });
+                self.prev_level();
                 return None;
             }
 
@@ -314,10 +318,12 @@ impl<'a> Parser<'a> {
         let kthxbye_statement = self.special_consume("Word_KTHXBYE");
         if let Some(kthxbye_statement) = kthxbye_statement {
             if !self.check_ending() && !self.is_at_end() {
+                self.next_level();
                 self.create_error(ParserError {
                     message: "Expected comma or newline to end statement",
                     token: self.peek(),
                 });
+                self.prev_level();
                 return None;
             }
 
@@ -340,10 +346,12 @@ impl<'a> Parser<'a> {
         let gimmeh_statement = self.parse_gimmeh_statement();
         if let Some(gimmeh_statement) = gimmeh_statement {
             if !self.check_ending() {
+                self.next_level();
                 self.create_error(ParserError {
                     message: "Expected comma or newline to end statement",
                     token: self.peek(),
                 });
+                self.prev_level();
                 return None;
             }
 
@@ -356,10 +364,12 @@ impl<'a> Parser<'a> {
         let if_statement = self.parse_if_statement();
         if let Some(if_statement) = if_statement {
             if !self.check_ending() {
+                self.next_level();
                 self.create_error(ParserError {
                     message: "Expected comma or newline to end statement",
                     token: self.peek(),
                 });
+                self.prev_level();
                 return None;
             }
 
@@ -372,10 +382,12 @@ impl<'a> Parser<'a> {
         let expression = self.parse_expression();
         if let Some(expression) = expression {
             if !self.check_ending() {
+                self.next_level();
                 self.create_error(ParserError {
                     message: "Expected comma or newline to end statement",
                     token: self.peek(),
                 });
+                self.prev_level();
                 return None;
             }
 
