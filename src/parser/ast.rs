@@ -26,6 +26,8 @@ pub enum StatementNodeValueOption {
     VisibleStatement(VisibleStatementNode),
     GimmehStatement(GimmehStatementNode),
     IfStatement(IfStatementNode),
+    SwitchStatement(SwitchStatementNode),
+    GTFOStatement(TokenNode),
 }
 
 #[derive(Debug, Clone)]
@@ -284,4 +286,16 @@ pub struct IfStatementNode {
     pub statements: Vec<StatementNode>,
     pub else_ifs: Vec<ElseIfStatementNode>,
     pub else_: Option<Vec<StatementNode>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SwitchCaseStatementNode {
+    pub expression: ExpressionNode,
+    pub statements: Vec<StatementNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SwitchStatementNode {
+    pub cases: Vec<SwitchCaseStatementNode>,
+    pub default: Option<Vec<StatementNode>>,
 }

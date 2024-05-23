@@ -379,6 +379,42 @@ impl<'a> Parser<'a> {
             });
         }
 
+        let switch_statement = self.parse_switch_statement();
+        if let Some(switch_statement) = switch_statement {
+            if !self.check_ending() {
+                self.next_level();
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                self.prev_level();
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::SwitchStatement(switch_statement),
+            });
+        }
+
+        let gtfo_statement = self.special_consume("Word_GTFO");
+        if let Some(gtfo_statement) = gtfo_statement {
+            if !self.check_ending() {
+                self.next_level();
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                self.prev_level();
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::GTFOStatement(gtfo_statement),
+            });
+        }
+
         let expression = self.parse_expression();
         if let Some(expression) = expression {
             if !self.check_ending() {
@@ -2160,6 +2196,152 @@ impl<'a> Parser<'a> {
             statements,
             else_ifs: else_if_nodes,
             else_: None,
+        })
+    }
+
+    pub fn parse_switch_statement(&mut self) -> Option<ast::SwitchStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_WTF") {
+            self.create_error(ParserError {
+                message: "Expected WTF keyword to start switch statement",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.consume(tokens::Token::QuestionMark) {
+            self.create_error(ParserError {
+                message: "Expected ? to start switch statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if !self.check_ending() {
+            self.create_error(ParserError {
+                message: "Expected newline or comma to end switch statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut cases: Vec<ast::SwitchCaseStatementNode> = Vec::new();
+
+        while !self.is_at_end() {
+            if self.special_check("Word_OIC") || self.special_check("Word_OMGWTF") {
+                break;
+            }
+
+            let statement = self.parse_statement();
+            if let Some(s) = statement {
+                if cases.len() == 0 {
+                    self.create_error(ParserError {
+                        message: "Expected OMGWTF keyword to start case statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+
+                let last = cases.len() - 1;
+                cases[last].statements.push(s);
+                continue;
+            } else if cases.len() > 0 {
+                self.create_error(ParserError {
+                    message: "Expected valid statement for case statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            if let None = self.special_consume("Word_OMG") {
+                self.create_error(ParserError {
+                    message: "Expected OMG keyword to start case statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            } else {
+                let expression = self.parse_expression();
+                if let None = expression {
+                    self.create_error(ParserError {
+                        message: "Expected valid expression for case statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+
+                cases.push(ast::SwitchCaseStatementNode {
+                    expression: expression.unwrap(),
+                    statements: Vec::new(),
+                });
+
+                if !self.check_ending() {
+                    self.create_error(ParserError {
+                        message: "Expected newline or comma to end case statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+            }
+        }
+
+        if let None = self.special_consume("Word_OMGWTF") {
+            self.create_error(ParserError {
+                message: "Expected OMGWTF keyword to start default case statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if !self.check_ending() {
+            self.create_error(ParserError {
+                message: "Expected newline or comma to end default case statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut default_case = Some(Vec::new());
+        while !self.is_at_end() {
+            let statement = self.parse_statement();
+            if let None = statement {
+                self.create_error(ParserError {
+                    message: "Expected valid statement for default case statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            default_case.as_mut().unwrap().push(statement.unwrap());
+
+            if self.special_check("Word_OIC") {
+                break;
+            }
+        }
+
+        if let None = self.special_consume("Word_OIC") {
+            self.create_error(ParserError {
+                message: "Expected OIC keyword to end switch statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        Some(ast::SwitchStatementNode {
+            cases,
+            default: default_case,
         })
     }
 }
