@@ -415,6 +415,24 @@ impl<'a> Parser<'a> {
             });
         }
 
+        let loop_statement = self.parse_loop_statement();
+        if let Some(loop_statement) = loop_statement {
+            if !self.check_ending() {
+                self.next_level();
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                self.prev_level();
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::LoopStatement(loop_statement),
+            });
+        }
+
         let expression = self.parse_expression();
         if let Some(expression) = expression {
             if !self.check_ending() {
@@ -2339,9 +2357,201 @@ impl<'a> Parser<'a> {
             return None;
         }
 
+        self.prev_level();
         Some(ast::SwitchStatementNode {
             cases,
             default: default_case,
+        })
+    }
+
+    pub fn parse_loop_statement(&mut self) -> Option<ast::LoopStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_IM") {
+            self.create_error(ParserError {
+                message: "Expected IM keyword to start loop statement",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_IN") {
+            self.create_error(ParserError {
+                message: "Expected IN keyword to start loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let label = self.special_consume("Identifier");
+        if let None = label {
+            self.create_error(ParserError {
+                message: "Expected identifier for loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_UPPIN") {
+            if let None = self.special_consume("Word_NERFIN") {
+                self.create_error(ParserError {
+                    message: "Expected UPPIN or NERFIN keyword to start loop statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+        }
+        let operation = self.previous();
+
+        if let None = self.special_consume("Word_YR") {
+            self.create_error(ParserError {
+                message: "Expected YR keyword to start loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let variable = self.special_consume("Identifier");
+        if let None = variable {
+            self.create_error(ParserError {
+                message: "Expected identifier for loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut condition = None;
+        let mut condition_expression = None;
+        if let None = self.special_consume("Word_TIL") {
+            if let Some(t) = self.special_consume("Word_WILE") {
+                condition = Some(t);
+
+                condition_expression = self.parse_expression();
+                if let None = condition_expression {
+                    self.create_error(ParserError {
+                        message: "Expected valid expression for loop statement",
+                        token: self.peek(),
+                    });
+                    self.reset(start);
+                    return None;
+                }
+            }
+        } else {
+            condition = Some(ast::TokenNode {
+                token: self.previous(),
+            });
+
+            condition_expression = self.parse_expression();
+            if let None = condition_expression {
+                self.create_error(ParserError {
+                    message: "Expected valid expression for loop statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+        }
+
+        if !self.check_ending() {
+            self.create_error(ParserError {
+                message: "Expected newline or comma to end loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut statements = Vec::new();
+        while !self.is_at_end() {
+            if self.special_check("Word_IM")
+                && self.special_check_amount("Word_OUTTA", 1)
+                && self.special_check_amount("Word_YR", 2)
+                && self.special_check_amount("Identifier", 3)
+            {
+                break;
+            }
+
+            let statement = self.parse_statement();
+            if let None = statement {
+                self.create_error(ParserError {
+                    message: "Expected valid statement for loop statement",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            statements.push(statement.unwrap());
+        }
+
+        if let None = self.special_consume("Word_IM") {
+            self.create_error(ParserError {
+                message: "Expected IM keyword to end loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_OUTTA") {
+            self.create_error(ParserError {
+                message: "Expected OUTTA keyword to end loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_YR") {
+            self.create_error(ParserError {
+                message: "Expected YR keyword to end loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let outta_label = self.special_consume("Identifier");
+        if let None = outta_label {
+            self.create_error(ParserError {
+                message: "Expected identifier to end loop statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        match label.clone().unwrap().token.token {
+            tokens::Token::Identifier(label) => match outta_label.unwrap().token.token {
+                tokens::Token::Identifier(outta_label) => {
+                    if label != outta_label {
+                        self.create_error(ParserError {
+                            message: "Expected same label to end loop statement",
+                            token: self.peek(),
+                        });
+                        self.reset(start);
+                        return None;
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+
+        self.prev_level();
+        Some(ast::LoopStatementNode {
+            label: label.unwrap(),
+            operation: ast::TokenNode { token: operation },
+            variable: variable.unwrap(),
+            condition,
+            condition_expression,
+            statements,
         })
     }
 }

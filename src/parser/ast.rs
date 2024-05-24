@@ -28,6 +28,7 @@ pub enum StatementNodeValueOption {
     IfStatement(IfStatementNode),
     SwitchStatement(SwitchStatementNode),
     GTFOStatement(TokenNode),
+    LoopStatement(LoopStatementNode),
 }
 
 #[derive(Debug, Clone)]
@@ -298,4 +299,14 @@ pub struct SwitchCaseStatementNode {
 pub struct SwitchStatementNode {
     pub cases: Vec<SwitchCaseStatementNode>,
     pub default: Option<Vec<StatementNode>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct LoopStatementNode {
+    pub label: TokenNode,
+    pub operation: TokenNode,
+    pub variable: TokenNode,
+    pub condition: Option<TokenNode>,
+    pub condition_expression: Option<ExpressionNode>,
+    pub statements: Vec<StatementNode>,
 }
