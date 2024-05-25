@@ -29,6 +29,8 @@ pub enum StatementNodeValueOption {
     SwitchStatement(SwitchStatementNode),
     GTFOStatement(TokenNode),
     LoopStatement(LoopStatementNode),
+    ReturnStatement(ReturnStatementNode),
+    FunctionDefinitionStatement(FunctionDefinitionStatementNode),
 }
 
 #[derive(Debug, Clone)]
@@ -308,5 +310,18 @@ pub struct LoopStatementNode {
     pub variable: TokenNode,
     pub condition: Option<TokenNode>,
     pub condition_expression: Option<ExpressionNode>,
+    pub statements: Vec<StatementNode>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ReturnStatementNode {
+    pub expression: ExpressionNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionDefinitionStatementNode {
+    pub identifier: TokenNode,
+    pub return_type: TokenNode,
+    pub arguments: Vec<(TokenNode, TokenNode)>,
     pub statements: Vec<StatementNode>,
 }

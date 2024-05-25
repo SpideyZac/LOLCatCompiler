@@ -54,7 +54,7 @@ fn main() {
         }
     }
 
-    let contents = "HAI 1.2,IM IN loop UPPIN YR x,VISIBLE \"HA HA\",IM OUTTA YR loop,KTHXBYE";
+    let contents = "HAI 1.2,HOW IZ I sum ITZ NUMBER YR a ITZ NUMBER AN YR b ITZ NUMBER,FOUND YR SUM OF a AN b,IF U SAY SO,KTHXBYE";
 
     let mut l = l::Lexer::init(contents);
     let tokens = l.get_tokens();

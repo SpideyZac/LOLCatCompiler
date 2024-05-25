@@ -433,6 +433,44 @@ impl<'a> Parser<'a> {
             });
         }
 
+        let return_statement = self.parse_return_statement();
+        if let Some(return_statement) = return_statement {
+            if !self.check_ending() {
+                self.next_level();
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                self.prev_level();
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::ReturnStatement(return_statement),
+            });
+        }
+
+        let function_definition_statement = self.parse_function_definition_statement();
+        if let Some(function_definition_statement) = function_definition_statement {
+            if !self.check_ending() {
+                self.next_level();
+                self.create_error(ParserError {
+                    message: "Expected comma or newline to end statement",
+                    token: self.peek(),
+                });
+                self.prev_level();
+                return None;
+            }
+
+            self.prev_level();
+            return Some(ast::StatementNode {
+                value: ast::StatementNodeValueOption::FunctionDefinitionStatement(
+                    function_definition_statement,
+                ),
+            });
+        }
+
         let expression = self.parse_expression();
         if let Some(expression) = expression {
             if !self.check_ending() {
@@ -2551,6 +2589,248 @@ impl<'a> Parser<'a> {
             variable: variable.unwrap(),
             condition,
             condition_expression,
+            statements,
+        })
+    }
+
+    pub fn parse_return_statement(&mut self) -> Option<ast::ReturnStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_FOUND") {
+            self.create_error(ParserError {
+                message: "Expected FOUND keyword to start return statement",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_YR") {
+            self.create_error(ParserError {
+                message: "Expected YR keyword to start return statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let expression = self.parse_expression();
+        if let None = expression {
+            self.create_error(ParserError {
+                message: "Expected valid expression for return statement",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::ReturnStatementNode {
+            expression: expression.unwrap(),
+        })
+    }
+
+    pub fn parse_function_definition_statement(
+        &mut self,
+    ) -> Option<ast::FunctionDefinitionStatementNode> {
+        self.next_level();
+        let start = self.current;
+
+        if let None = self.special_consume("Word_HOW") {
+            self.create_error(ParserError {
+                message: "Expected HOW keyword to start function definition",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        if let None = self.special_consume("Word_IZ") {
+            self.create_error(ParserError {
+                message: "Expected IZ keyword to start function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_I") {
+            self.create_error(ParserError {
+                message: "Expected I keyword to start function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let identifier = self.special_consume("Identifier");
+        if let None = identifier {
+            self.create_error(ParserError {
+                message: "Expected identifier for function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_ITZ") {
+            self.create_error(ParserError {
+                message: "Expected ITZ keyword to start function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let return_type: ast::TokenNode;
+        if let Some(type_) = self.special_consume("Word_NUMBER") {
+            return_type = type_;
+        } else if let Some(type_) = self.special_consume("Word_NUMBAR") {
+            return_type = type_;
+        } else if let Some(type_) = self.special_consume("Word_YARN") {
+            return_type = type_;
+        } else if let Some(type_) = self.special_consume("Word_TROOF") {
+            return_type = type_;
+        } else if let Some(type_) = self.special_consume("Word_NOOB") {
+            return_type = type_;
+        } else {
+            self.create_error(ParserError {
+                message: "Expected valid return type for function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut arguments = Vec::new();
+        while !self.is_at_end() {
+            if let None = self.special_consume("Word_YR") {
+                self.create_error(ParserError {
+                    message: "Expected YR keyword for function definition",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            let identifier = self.special_consume("Identifier");
+            if let None = identifier {
+                self.create_error(ParserError {
+                    message: "Expected identifier for function definition",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            if let None = self.special_consume("Word_ITZ") {
+                self.create_error(ParserError {
+                    message: "Expected ITZ keyword to start function definition",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            let type_: ast::TokenNode;
+            if let Some(type__) = self.special_consume("Word_NUMBER") {
+                type_ = type__;
+            } else if let Some(type__) = self.special_consume("Word_NUMBAR") {
+                type_ = type__;
+            } else if let Some(type__) = self.special_consume("Word_YARN") {
+                type_ = type__;
+            } else if let Some(type__) = self.special_consume("Word_TROOF") {
+                type_ = type__;
+            } else {
+                self.create_error(ParserError {
+                    message: "Expected valid type for function definition",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            arguments.push((identifier.unwrap(), type_));
+
+            if self.special_check("Word_AN") {
+                self.special_consume("Word_AN");
+            } else {
+                break;
+            }
+        }
+
+        if !self.check_ending() {
+            self.create_error(ParserError {
+                message: "Expected newline or comma to end function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        let mut statements = Vec::new();
+        while !self.is_at_end() {
+            if self.special_check("Word_IF")
+                && self.special_check_amount("Word_U", 1)
+                && self.special_check_amount("Word_SAY", 2)
+                && self.special_check_amount("Word_SO", 3)
+            {
+                break;
+            }
+
+            let statement = self.parse_statement();
+            if let None = statement {
+                self.create_error(ParserError {
+                    message: "Expected valid statement for function definition",
+                    token: self.peek(),
+                });
+                self.reset(start);
+                return None;
+            }
+
+            statements.push(statement.unwrap());
+        }
+
+        if let None = self.special_consume("Word_IF") {
+            self.create_error(ParserError {
+                message: "Expected IF keyword to end function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_U") {
+            self.create_error(ParserError {
+                message: "Expected U keyword to end function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_SAY") {
+            self.create_error(ParserError {
+                message: "Expected SAY keyword to end function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        if let None = self.special_consume("Word_SO") {
+            self.create_error(ParserError {
+                message: "Expected SO keyword to end function definition",
+                token: self.peek(),
+            });
+            self.reset(start);
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::FunctionDefinitionStatementNode {
+            arguments,
+            identifier: identifier.unwrap(),
+            return_type,
             statements,
         })
     }
