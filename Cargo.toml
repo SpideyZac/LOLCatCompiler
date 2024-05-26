@@ -2,6 +2,3 @@
 name = "LOLCatCompiler"
 version = "0.1.0"
 edition = "2021"
-
-[dependencies]
-rust-embed = { version = "8.4.0", features = ["compression"] }
