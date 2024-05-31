@@ -17,7 +17,7 @@ pub enum IRStatement {
     BeginWhile,
     EndWhile,
     LoadBasePtr,
-    EstablishStackFrame(i32),
+    EstablishStackFrame,
     EndStackFrame(i32, i32),
     SetReturnRegister,
     AccessReturnRegister,
@@ -42,9 +42,7 @@ impl IRStatement {
             IRStatement::BeginWhile => target.begin_while(),
             IRStatement::EndWhile => target.end_while(),
             IRStatement::LoadBasePtr => target.load_base_ptr(),
-            IRStatement::EstablishStackFrame(local_scope_size) => {
-                target.establish_stack_frame(*local_scope_size)
-            }
+            IRStatement::EstablishStackFrame => target.establish_stack_frame(),
             IRStatement::EndStackFrame(arg_size, local_scope_size) => {
                 target.end_stack_frame(*arg_size, *local_scope_size)
             }
@@ -125,6 +123,10 @@ impl IR {
 
     pub fn assemble(&self, target: &impl Target) -> String {
         let mut code = String::new();
+        code.push_str(&target.core_prelude());
+        if target.is_standard() {
+            code.push_str(&target.std());
+        }
 
         for function in self.functions.iter() {
             let assembly = function.assemble(target);
@@ -135,6 +137,7 @@ impl IR {
         let entry = self.entry.assemble(target);
 
         code.push_str(&entry);
+        code.push_str(&target.core_postlude());
 
         code
     }

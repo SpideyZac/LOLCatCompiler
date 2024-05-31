@@ -1,3 +1,5 @@
+pub mod vm;
+
 pub trait Target {
     fn get_name(&self) -> char;
     fn is_standard(&self) -> bool;
@@ -9,7 +11,7 @@ pub trait Target {
     fn begin_entry_point(&self, stack_size: i32, heap_size: i32) -> String;
     fn end_entry_point(&self) -> String;
 
-    fn establish_stack_frame(&self, local_scope_size: i32) -> String;
+    fn establish_stack_frame(&self) -> String;
     fn end_stack_frame(&self, arg_size: i32, local_scope_size: i32) -> String;
     fn set_return_register(&self) -> String;
     fn access_return_register(&self) -> String;
