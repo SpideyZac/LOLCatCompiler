@@ -3,9 +3,21 @@
 A simple & performant LOLCode compiler written in Rust.
 
 # Compilation Modes
-- To C runtime
-- To assembly (very limited targets; you'll most likely have to implement them yourself)
-- To binary (same story as assembly as it just uses NASM and the outputted assembly)
+
+## C Virtual Machine
+LOLCatCompiler comes with a built in C Runtime to allow it to be ran on any machine. Optionally, you can compile to assembly, but not many targets are supported so you will have to implement any new ones yourself.
+
+### Dependencies
+An optional cc arg can be passed to the program to specify the c compiler to use. By default, LOLCatCompiler will look for a `dep` folder located in the same directory as the executable and will look for a `tcc` or tiny c compiler folder inside.
+If the tiny c compiler is not found, it will default to use `gcc`.
+
+### Compilation Steps
+
+* Lex & Parse the input script
+* Generate IR code for the AST
+* Create a temp c file containing all of the VM instructions
+* Import the std.c and core.c
+* Compile the script using the `dependencies`
 
 # IR (Intermediate Representation)
 LOLCatCompiler's IR takes inspiration from [oakc's intermediate representation](https://github.com/adam-mcdaniel/oakc?tab=readme-ov-file#intermediate-representation)
@@ -80,8 +92,7 @@ fn main() {
             100, // stack_size (400 bytes)
             400, // heap_size (400 bytes)
             vec![
-                IRStatement::Push(0.0), // GARBAGE (the next instruction address after the stack frame finishes, but there is nothing else after main so you can put whatever number you want here)
-                IRStatement::EstablishStackFrame,
+                // Establish stack frame is automatically called
                 IRStatement::Push(4.0), // Store the size (in bytes) of this allocation for later use
                 IRStatement::Push(4.0), // We do the same thing, but Allocate will eat this value
                 IRStatement::Allocate, // Push a heap_ptr where 4 bytes are allocated (acts as arg3 for sum)
@@ -97,7 +108,7 @@ fn main() {
                 IRStatement::CallForeign("prn".to_string()), // print its value (in number form)
                 IRStatement::CallForeign("prend".to_string()), // print a new line
                 IRStatement::Free, // Free the heap_ptr (the only 2 things left on the stack are the original arg3 and the duplicate 4.0 size in bytes) - frees the heap memory at heap_ptr with a size of 4.0 bytes
-                IRStatement::EndStackFrame(0, 0), // All variables are cleaned up and main takes no args
+                // do not need to end the stack frame as the program is done anyways
             ],
         ),
     );

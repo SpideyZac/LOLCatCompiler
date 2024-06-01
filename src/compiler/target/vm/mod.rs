@@ -1,7 +1,7 @@
 use super::Target;
+
 use std::{
-    env::consts::EXE_SUFFIX,
-    //fs::{remove_file, write},
+    env::{consts::EXE_SUFFIX, current_exe},
     io::{Error, ErrorKind, Result, Write},
     process::{Command, Stdio},
 };
@@ -119,7 +119,7 @@ impl Target for VM {
     }
 
     fn call_foreign_fn(&self, name: String) -> String {
-        format!("{}(vm);\n", name) // we push 1 as a temp value for a return pointer
+        format!("{}(vm);\n", name)
     }
 
     fn begin_while(&self) -> String {
@@ -131,7 +131,18 @@ impl Target for VM {
     }
 
     fn compile(&self, code: String) -> Result<()> {
-        let child = Command::new("gcc")
+        let exe_path = current_exe()?;
+        let exe_dir = exe_path.parent().unwrap();
+
+        let deps_path = exe_dir.join("dep");
+        let mut tcc_path = deps_path.join("tcc");
+        let mut cc = "gcc";
+        tcc_path = tcc_path.join(("tcc".to_string() + EXE_SUFFIX).as_str());
+        if tcc_path.exists() {
+            cc = tcc_path.to_str().unwrap();
+        }
+
+        let child = Command::new(cc)
             .arg("-O2")
             .args(&["-o", &format!("main{}", EXE_SUFFIX)[..]])
             .args(&["-x", "c", "-"])

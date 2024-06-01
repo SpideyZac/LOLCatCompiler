@@ -57,8 +57,6 @@ fn main() {
             100,
             400,
             vec![
-                IRStatement::Push(0.0),
-                IRStatement::EstablishStackFrame,
                 IRStatement::Push(4.0),
                 IRStatement::Push(4.0),
                 IRStatement::Allocate,
@@ -74,7 +72,6 @@ fn main() {
                 IRStatement::CallForeign("prn".to_string()),
                 IRStatement::CallForeign("prend".to_string()),
                 IRStatement::Free,
-                IRStatement::EndStackFrame(0, 0),
             ],
         ),
     );

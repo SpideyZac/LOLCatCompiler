@@ -104,6 +104,8 @@ impl IRFunctionEntry {
         }
 
         code.push_str(&target.begin_entry_point(self.stack_size, self.heap_size));
+        // we don't need a return address as end_stack_frame is never called in entry
+        code.push_str(&target.establish_stack_frame());
         code.push_str(&body);
         code.push_str(&target.end_entry_point());
 
