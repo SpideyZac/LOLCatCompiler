@@ -23,7 +23,7 @@ In fact, we have only added 3 instructions (and changed some) for compatability 
 | `free();` | Pop a number off of the stack, and go to where this number points in the heap. Pop another number off of the stack, and free that many cells at this location in the heap. |
 | `store(size: i32);` | Pop a number off of the stack, and go to where this number points in the heap. Then, pop `size` numbers off of the stack. Store these numbers in reverse order at this location in the heap. |
 | `load(size: i32);` | Pop a number off of the stack, and go to where this number points in the heap. Then, push `size` number of consecutive memory cells onto the stack. |
-| `copy();` | Pop a number off of the stack, and go to where base_ptr + this number points in the stack. Then push the value in the stack back onto the stack again.  |
+| `copy();` | Pop a number off of the stack, and go to where base_ptr - this number points in the stack. Then push the value in the stack back onto the stack again.  |
 | `call(fn: i32);` | Call a user defined function by it's compiler assigned ID. |
 | `call_foreign_fn(name: String);` | Call a foreign function by its name in source. |
 | `begin_while();` | Start a while loop. For each iteration, pop a number off of the stack. If the number is not zero, continue the loop. |
