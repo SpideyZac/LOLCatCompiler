@@ -40,48 +40,40 @@ fn main() {
             "sum".to_string(),
             vec![
                 IRStatement::EstablishStackFrame,
-                IRStatement::LoadBasePtr,
                 IRStatement::Push(2.0),
-                IRStatement::Subtract,
                 IRStatement::Copy,
-                IRStatement::LoadBasePtr,
                 IRStatement::Push(3.0),
-                IRStatement::Subtract,
                 IRStatement::Copy,
                 IRStatement::Add,
                 IRStatement::SetReturnRegister,
                 IRStatement::AccessReturnRegister,
-                IRStatement::LoadBasePtr,
                 IRStatement::Push(4.0),
-                IRStatement::Subtract,
                 IRStatement::Copy,
-                IRStatement::Store(1),            // store 1 float on the heap
-                IRStatement::EndStackFrame(2, 0), // add will destroy copied args and set return register destroys add (don't destory heap pointer)
+                IRStatement::Store(1),
+                IRStatement::EndStackFrame(2, 0),
             ],
         )],
         IRFunctionEntry::new(
-            100, // 100 floats = 400 bytes
-            400, // 400 bytes
+            100,
+            400,
             vec![
-                IRStatement::Push(0.0), // garbage return address which won't be used
+                IRStatement::Push(0.0),
                 IRStatement::EstablishStackFrame,
-                IRStatement::Push(4.0), // 4 bytes for the return register (just testing heap) (keep this so that when we call free later it is arg1 and the heap pointer is arg2)
-                IRStatement::Push(4.0), // 4 bytes for the return register (just testing heap)
-                IRStatement::Allocate, // will push the address of the allocated memory to the stack as an arg
-                IRStatement::Push(2.0), // b
-                IRStatement::Push(1.0), // a
-                IRStatement::Call("sum".to_string()), // call sum with a and b
-                IRStatement::AccessReturnRegister, // push eax (return register) to the stack
-                IRStatement::CallForeign("prn".to_string()), // print the result
-                IRStatement::CallForeign("prend".to_string()), // print the endline
-                IRStatement::LoadBasePtr,
+                IRStatement::Push(4.0),
+                IRStatement::Push(4.0),
+                IRStatement::Allocate,
                 IRStatement::Push(2.0),
-                IRStatement::Add, // we want to get a local variable not an arg
+                IRStatement::Push(1.0),
+                IRStatement::Call("sum".to_string()),
+                IRStatement::AccessReturnRegister,
+                IRStatement::CallForeign("prn".to_string()),
+                IRStatement::CallForeign("prend".to_string()),
+                IRStatement::Push(-2.0),
                 IRStatement::Copy,
-                IRStatement::Load(1), // load the float from the heap
-                IRStatement::CallForeign("prn".to_string()), // print the result
-                IRStatement::CallForeign("prend".to_string()), // print the endline
-                IRStatement::Free,    // the original pointer is still on the stack
+                IRStatement::Load(1),
+                IRStatement::CallForeign("prn".to_string()),
+                IRStatement::CallForeign("prend".to_string()),
+                IRStatement::Free,
                 IRStatement::EndStackFrame(0, 0),
             ],
         ),

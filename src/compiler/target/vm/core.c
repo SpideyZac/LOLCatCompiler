@@ -167,7 +167,7 @@ void machine_store(machine *vm, int floats) {
     int addr = machine_pop(vm);
 
     // store value in heap by breaking it into bytes
-    for (int i = 0; i < floats; i++) {
+    for (int i = floats - 1; i >= 0; i--) {
         float value = machine_pop(vm);
 
         unsigned char bytes[4];
@@ -193,9 +193,9 @@ void machine_load(machine *vm, int floats) {
 }
 
 void machine_copy(machine *vm) {
-    int stack_addr = machine_pop(vm);
+    int offset = machine_pop(vm);
 
-    machine_push(vm, vm->stack[stack_addr]);
+    machine_push(vm, vm->stack[vm->base_ptr - offset]);
 }
 
 void machine_add(machine *vm) {
