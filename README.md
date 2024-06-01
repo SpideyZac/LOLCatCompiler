@@ -28,18 +28,23 @@ In fact, we have only added 3 instructions (and changed some) for compatability 
 | `call_foreign_fn(name: String);` | Call a foreign function by its name in source. |
 | `begin_while();` | Start a while loop. For each iteration, pop a number off of the stack. If the number is not zero, continue the loop. |
 | `end_while();` | Mark the end of a while loop. |
-| `load_base_ptr();` | Load the base pointer of the established stack frame, which is always less than or equal to the stack pointer. Here is how the stack frame might look like:
+| `load_base_ptr();` | Load the base pointer of the established stack frame, which is always less than or equal to the stack pointer. |
+| `establish_stack_frame();` | Calls `load_base_ptr` and sets the base_ptr to the current stack address |
+| `end_stack_frame(arg_size: i32, local_scope_size: i32);` | Pop `local_scope_size` numbers off of the stack. Then, restore the base_ptr by popping another number off the stack. Next, pop the return address (next instruction address) of off the stack. Finally, pop `arg_size` numbers off of the stack. |
+| `set_return_register();` | Pop a number off of the stack, and set the return register to its value |
+| `access_return_register();` | Push return register's value to the stack |
+
+Here is how the base_ptr works:
+
+```
 ; ebp = base_pointer
 ; ebp + 3 = arg2
 ; ebp + 2 = arg1
 ; ebp + 1 = next address (after func return)
 ; ebp     = previous base pointer
 ; ebp - 1 = local_variable_1
-; ebp - 2 = local_variable_2|
-| `establish_stack_frame();` | Calls `load_base_ptr` and sets the base_ptr to the current stack address |
-| `end_stack_frame(arg_size: i32, local_scope_size: i32);` | Pop `local_scope_size` numbers off of the stack. Then, restore the base_ptr by popping another number off the stack. Next, pop the return address (next instruction address) of off the stack. Finally, pop `arg_size` numbers off of the stack. |
-| `set_return_register();` | Pop a number off of the stack, and set the return register to its value |
-| `access_return_register();` | Push return register's value to the stack |
+; ebp - 2 = local_variable_2
+```
 
 Example Program (which adds 1 + 2)
 
@@ -58,7 +63,7 @@ fn main() {
             vec![
                 IRStatement::EstablishStackFrame,
                 IRStatement::Push(2.0),
-                IRStatement::Copy, // Copies arg1 (num1) to the front of the stack (base_ptr + 2) (recall the structure defined in `load_base_ptr`)
+                IRStatement::Copy, // Copies arg1 (num1) to the front of the stack (base_ptr + 2) (recall the structure for base_ptr)
                 IRStatement::Push(3.0),
                 IRStatement::Copy, // Copies arg2 (num2) to the front of the stack (base_ptr + 3)
                 IRStatement::Add, // Add num1 and num2 together
