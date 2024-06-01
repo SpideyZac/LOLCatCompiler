@@ -27,8 +27,8 @@ pub trait Target {
 
     fn allocate(&self) -> String;
     fn free(&self) -> String;
-    fn store(&self, size: i32) -> String;
-    fn load(&self, size: i32) -> String;
+    fn store(&self, floats: i32) -> String;
+    fn load(&self, floats: i32) -> String;
     fn f_copy(&self) -> String;
 
     fn fn_header(&self, name: String) -> String;

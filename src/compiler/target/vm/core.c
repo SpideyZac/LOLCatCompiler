@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include<string.h>
 
 typedef struct machine {
     float* stack;
@@ -85,7 +86,7 @@ void machine_load_base_ptr(machine *vm) {
 
 void machine_establish_stack_frame(machine *vm) {
     machine_load_base_ptr(vm);
-    vm->base_ptr = vm->stack_pointer;
+    vm->base_ptr = vm->stack_pointer - 1;
 }
 
 void machine_end_stack_frame(machine *vm, int arg_size, int local_scope_size) {
@@ -144,26 +145,57 @@ void machine_free(machine *vm) {
     }
 }
 
-void machine_store(machine *vm, int size) {
+void float2Bytes(unsigned char bytes_temp[4], float float_variable) {
+    union {
+        float a;
+        unsigned char bytes[4];
+    } thing;
+    thing.a = float_variable;
+    memcpy(bytes_temp, thing.bytes, 4);
+}
+
+float bytes2Float(unsigned char bytes_temp[4]) {
+    union {
+        float a;
+        unsigned char bytes[4];
+    } thing;
+    memcpy(thing.bytes, bytes_temp, 4);
+    return thing.a;
+}
+
+void machine_store(machine *vm, int floats) {
     int addr = machine_pop(vm);
 
-    for (int i = size - 1; i >= 0; i--) {
-        vm->heap[addr + i] = machine_pop(vm);
+    // store value in heap by breaking it into bytes
+    for (int i = 0; i < floats; i++) {
+        float value = machine_pop(vm);
+
+        unsigned char bytes[4];
+        float2Bytes(bytes, value);
+
+        for (int j = 0; j < 4; j++) {
+            vm->heap[addr + i * 4 + j] = bytes[j];
+        }
     }
 }
 
-void machine_load(machine *vm, int size) {
+void machine_load(machine *vm, int floats) {
     int addr = machine_pop(vm);
 
-    for (int i = 0; i < size; i++) {
-        machine_push(vm, vm->heap[addr + i]);
+    // load value from heap by combining bytes
+    for (int i = 0; i < floats; i++) {
+        unsigned char bytes[4];
+        for (int j = 0; j < 4; j++) {
+            bytes[j] = vm->heap[addr + i * 4 + j];
+        }
+        machine_push(vm, bytes2Float(bytes));
     }
 }
 
 void machine_copy(machine *vm) {
     int stack_addr = machine_pop(vm);
 
-    machine_push(vm, vm->stack[stack_addr - 1]); // because stack_pointer points to the next free address
+    machine_push(vm, vm->stack[stack_addr]);
 }
 
 void machine_add(machine *vm) {
