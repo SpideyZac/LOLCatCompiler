@@ -22,7 +22,7 @@ If the tiny c compiler is not found, it will default to use `gcc`.
 # IR (Intermediate Representation)
 LOLCatCompiler's IR takes inspiration from [oakc's intermediate representation](https://github.com/adam-mcdaniel/oakc?tab=readme-ov-file#intermediate-representation)
 
-In fact, we have only added 3 instructions (and changed some) for compatability with assembly! (**MAY CHANGE**)
+In fact, we have only added 4 instructions (and changed some) for compatability with assembly! (**MAY CHANGE**)
 | Instruction | Side Effect |
 |-|-|
 | `push(n: f32);` | Push a number onto the stack. |
