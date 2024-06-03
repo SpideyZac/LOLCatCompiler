@@ -175,7 +175,9 @@ impl<'a> Visitor<'a> {
             }
             function.variables += 1;
             function.variable_map.insert(name.clone(), variable_type);
-            function.variable_addresses.insert(name, -function.variables);
+            function
+                .variable_addresses
+                .insert(name, -function.variables);
             self.add_statements(vec![ir::IRStatement::Push(0.0)]);
         }
     }
