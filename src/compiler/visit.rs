@@ -253,16 +253,18 @@ impl<'a> Visitor<'a> {
             .clone();
 
             if self.program_state.is_inside_entry {
-                self.add_statements(vec![ir::IRStatement::Push(
-                    *self
-                        .program_state
-                        .entry_function_state
-                        .variable_addresses
-                        .get(&name)
-                        .unwrap() as f32,
-                )]);
                 self.visit_expression(variable_assignment_statement.expression.clone());
-                self.add_statements(vec![ir::IRStatement::Mov]);
+                self.add_statements(vec![
+                    ir::IRStatement::Push(
+                        *self
+                            .program_state
+                            .entry_function_state
+                            .variable_addresses
+                            .get(&name)
+                            .unwrap() as f32,
+                    ),
+                    ir::IRStatement::Mov,
+                ]);
             } else {
                 let index = self
                     .find_function_index_by_name(self.program_state.function_name.clone())
