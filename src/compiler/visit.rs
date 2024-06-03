@@ -5,14 +5,34 @@ use crate::lexer::tokens;
 use crate::parser::ast;
 use crate::parser::parser;
 
+#[derive(PartialEq, Clone)]
 pub enum VariableTypes {
     Number,
+    Numbar,
+    Yarn,
+    Troof,
 }
 
+impl VariableTypes {
+    pub fn to_string(&self) -> String {
+        match self {
+            VariableTypes::Number => "NUMBER".to_string(),
+            VariableTypes::Numbar => "NUMBAR".to_string(),
+            VariableTypes::Yarn => "YARN".to_string(),
+            VariableTypes::Troof => "TROOF".to_string(),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct ScopeState {
     pub variables: i32,
     pub variable_map: HashMap<String, VariableTypes>,
     pub variable_addresses: HashMap<String, i32>,
+    pub parent: Option<Box<ScopeState>>,
+    pub arguments: i32,
+    pub argument_map: HashMap<String, VariableTypes>,
+    pub argument_addresses: HashMap<String, i32>,
 }
 
 pub struct ProgramState {
@@ -38,7 +58,7 @@ pub struct Visitor<'a> {
 impl<'a> Visitor<'a> {
     pub fn new(ast_tree: parser::ParserReturn<'a>, stack_size: i32, heap_size: i32) -> Self {
         let entry = ir::IRFunctionEntry::new(stack_size, heap_size, vec![]);
-        Self {
+        let mut visitor = Self {
             ast_tree,
             ir: ir::IR::new(vec![], entry),
             errors: vec![],
@@ -49,10 +69,68 @@ impl<'a> Visitor<'a> {
                     variables: 0,
                     variable_map: HashMap::new(),
                     variable_addresses: HashMap::new(),
+                    parent: None,
+                    arguments: 0,
+                    argument_map: HashMap::new(),
+                    argument_addresses: HashMap::new(),
                 },
                 function_states: vec![],
             },
-        }
+        };
+
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_map
+            .insert("IT_NUMBER".to_string(), VariableTypes::Number);
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_addresses
+            .insert("IT_NUMBER".to_string(), 1);
+        visitor.program_state.entry_function_state.variables += 1;
+        visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
+
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_map
+            .insert("IT_NUMBAR".to_string(), VariableTypes::Number);
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_addresses
+            .insert("IT_NUMBAR".to_string(), 2);
+        visitor.program_state.entry_function_state.variables += 1;
+        visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
+
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_map
+            .insert("IT_YARN".to_string(), VariableTypes::Number);
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_addresses
+            .insert("IT_YARN".to_string(), 3);
+        visitor.program_state.entry_function_state.variables += 1;
+        visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
+
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_map
+            .insert("IT_TROOF".to_string(), VariableTypes::Number);
+        visitor
+            .program_state
+            .entry_function_state
+            .variable_addresses
+            .insert("IT_TROOF".to_string(), 4);
+        visitor.program_state.entry_function_state.variables += 1;
+        visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
+
+        visitor
     }
 
     pub fn find_function_index_by_name(&self, name: String) -> Option<usize> {
@@ -89,10 +167,6 @@ impl<'a> Visitor<'a> {
 
     pub fn visit_statement(&mut self, statement: ast::StatementNode) {
         match statement.value {
-            ast::StatementNodeValueOption::Expression(expression) => {
-                self.visit_expression(expression.clone());
-                // TODO: setup IT variable from exp
-            }
             ast::StatementNodeValueOption::VariableDeclarationStatement(
                 variable_declaration_statement,
             ) => {
@@ -107,10 +181,47 @@ impl<'a> Visitor<'a> {
         }
     }
 
-    pub fn visit_expression(&mut self, expression: ast::ExpressionNode) {
+    pub fn visit_expression(
+        &mut self,
+        expression: ast::ExpressionNode,
+        expected_type: VariableTypes,
+    ) {
         match expression.value {
             ast::ExpressionNodeValueOption::NumberValue(number_value) => {
                 self.visit_number_value(number_value.clone());
+                if expected_type != VariableTypes::Number {
+                    self.errors.push(VisitorError {
+                        message: format!("Expected type {}, got NUMBER", expected_type.to_string()),
+                        token: number_value.token.clone(),
+                    });
+                }
+            }
+            ast::ExpressionNodeValueOption::NumbarValue(numbar_value) => {
+                self.visit_numbar_value(numbar_value.clone());
+                if expected_type != VariableTypes::Numbar {
+                    self.errors.push(VisitorError {
+                        message: format!("Expected type {}, got NUMBAR", expected_type.to_string()),
+                        token: numbar_value.token.clone(),
+                    });
+                }
+            }
+            ast::ExpressionNodeValueOption::YarnValue(yarn_value) => {
+                self.visit_yarn_value(yarn_value.clone());
+                if expected_type != VariableTypes::Yarn {
+                    self.errors.push(VisitorError {
+                        message: format!("Expected type {}, got YARN", expected_type.to_string()),
+                        token: yarn_value.token.clone(),
+                    });
+                }
+            }
+            ast::ExpressionNodeValueOption::TroofValue(troof_value) => {
+                self.visit_troof_value(troof_value.clone());
+                if expected_type != VariableTypes::Troof {
+                    self.errors.push(VisitorError {
+                        message: format!("Expected type {}, got TROOF", expected_type.to_string()),
+                        token: troof_value.token.clone(),
+                    });
+                }
             }
             _ => {}
         }
@@ -118,6 +229,38 @@ impl<'a> Visitor<'a> {
 
     pub fn visit_number_value(&mut self, number_value: ast::NumberValueNode) {
         self.add_statements(vec![ir::IRStatement::Push(number_value.value() as f32)]);
+    }
+
+    pub fn visit_numbar_value(&mut self, numbar_value: ast::NumbarValueNode) {
+        self.add_statements(vec![ir::IRStatement::Push(numbar_value.value())]);
+    }
+
+    pub fn visit_yarn_value(&mut self, yarn_value: ast::YarnValueNode) {
+        for char in yarn_value.value().chars() {
+            self.add_statements(vec![ir::IRStatement::Push(char as i32 as f32)]);
+        }
+
+        let last_address = -(self.program_state.entry_function_state.variables
+            + 1
+            + yarn_value.value().len() as i32
+            + 1); // 1 for the next address, len for the length of the string, 1 for the stored length
+
+        self.add_statements(vec![
+            ir::IRStatement::Push((4 * yarn_value.value().len()) as f32),
+            ir::IRStatement::Push((4 * yarn_value.value().len()) as f32 + 1.0),
+            ir::IRStatement::Allocate,
+            ir::IRStatement::Push(last_address as f32),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Store(yarn_value.value().len() as i32 + 1),
+        ]);
+    }
+
+    pub fn visit_troof_value(&mut self, troof_value: ast::TroofValueNode) {
+        self.add_statements(vec![ir::IRStatement::Push(if troof_value.value() {
+            1.0
+        } else {
+            0.0
+        })]);
     }
 
     pub fn visit_variable_declaration_statement(
@@ -133,6 +276,9 @@ impl<'a> Visitor<'a> {
         let variable_type = match variable_declaration_statement.type_.value() {
             tokens::Token::Word(word) => match word.as_str() {
                 "NUMBER" => VariableTypes::Number,
+                "NUMBAR" => VariableTypes::Numbar,
+                "YARN" => VariableTypes::Yarn,
+                "TROOF" => VariableTypes::Troof,
                 _ => panic!("Unexpected variable type"),
             },
             _ => panic!("Unexpected token"),
@@ -144,6 +290,11 @@ impl<'a> Visitor<'a> {
                 .entry_function_state
                 .variable_map
                 .contains_key(&name)
+                || self
+                    .program_state
+                    .entry_function_state
+                    .argument_map
+                    .contains_key(&name)
             {
                 self.errors.push(VisitorError {
                     message: format!("Variable {} already declared", name),
@@ -166,7 +317,9 @@ impl<'a> Visitor<'a> {
                 .find_function_index_by_name(self.program_state.function_name.clone())
                 .unwrap();
             let function = &mut self.program_state.function_states[index];
-            if function.variable_map.contains_key(&name) {
+            if function.variable_map.contains_key(&name)
+                || function.argument_map.contains_key(&name)
+            {
                 self.errors.push(VisitorError {
                     message: format!("Variable {} already declared", name),
                     token: variable_declaration_statement.identifier.clone(),
@@ -209,7 +362,15 @@ impl<'a> Visitor<'a> {
                     return;
                 }
 
-                self.visit_expression(variable_assignment_statement.expression.clone());
+                self.visit_expression(
+                    variable_assignment_statement.expression.clone(),
+                    self.program_state
+                        .entry_function_state
+                        .variable_map
+                        .get(&name)
+                        .unwrap()
+                        .clone(),
+                );
                 self.add_statements(vec![
                     ir::IRStatement::Push(
                         *self
@@ -225,7 +386,9 @@ impl<'a> Visitor<'a> {
                 let index = self
                     .find_function_index_by_name(self.program_state.function_name.clone())
                     .unwrap();
-                let function = &mut self.program_state.function_states[index];
+                let function_states = &mut self.program_state.function_states;
+                let function = &mut function_states[index];
+                let clone = function.clone();
                 if !function.variable_map.contains_key(&name) {
                     self.errors.push(VisitorError {
                         message: format!("Variable {} not declared", name),
@@ -236,7 +399,10 @@ impl<'a> Visitor<'a> {
 
                 let address = *function.variable_addresses.get(&name).unwrap() as f32;
 
-                self.visit_expression(variable_assignment_statement.expression.clone());
+                self.visit_expression(
+                    variable_assignment_statement.expression.clone(),
+                    clone.variable_map.get(&name).unwrap().clone(),
+                );
                 self.add_statements(vec![ir::IRStatement::Push(address), ir::IRStatement::Mov]);
             }
         }
@@ -253,7 +419,15 @@ impl<'a> Visitor<'a> {
             .clone();
 
             if self.program_state.is_inside_entry {
-                self.visit_expression(variable_assignment_statement.expression.clone());
+                self.visit_expression(
+                    variable_assignment_statement.expression.clone(),
+                    self.program_state
+                        .entry_function_state
+                        .variable_map
+                        .get(&name)
+                        .unwrap()
+                        .clone(),
+                );
                 self.add_statements(vec![
                     ir::IRStatement::Push(
                         *self
@@ -270,10 +444,14 @@ impl<'a> Visitor<'a> {
                     .find_function_index_by_name(self.program_state.function_name.clone())
                     .unwrap();
                 let function = &mut self.program_state.function_states[index];
+                let clone = function.clone();
 
                 let address = *function.variable_addresses.get(&name).unwrap() as f32;
 
-                self.visit_expression(variable_assignment_statement.expression.clone());
+                self.visit_expression(
+                    variable_assignment_statement.expression.clone(),
+                    clone.variable_map.get(&name).unwrap().clone(),
+                );
                 self.add_statements(vec![ir::IRStatement::Push(address), ir::IRStatement::Mov]);
             }
         }

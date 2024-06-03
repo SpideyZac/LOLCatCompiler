@@ -62,7 +62,10 @@ pub enum ExpressionNodeValueOption {
     DiffrintExpression(DiffrintExpressionNode),
     SmooshExpression(SmooshExpressionNode),
     MaekExpression(MaekExpressionNode),
-    ItReference(ItReferenceNode),
+    ItNumberReference(ItNumberReferenceNode),
+    ItNumbarReference(ItNumbarReferenceNode),
+    ItYarnReference(ItYarnReferenceNode),
+    ItTroofReference(ItTroofReferenceNode),
     FunctionCallExpression(FunctionCallExpressionNode),
 }
 
@@ -92,9 +95,9 @@ pub struct NumbarValueNode {
 }
 
 impl NumbarValueNode {
-    pub fn value(&self) -> f64 {
+    pub fn value(&self) -> f32 {
         if let tokens::Token::NumbarValue(value) = self.token.value() {
-            value.parse::<f64>().unwrap()
+            value.parse::<f32>().unwrap()
         } else {
             panic!("Expected NumbarValue token")
         }
@@ -239,7 +242,22 @@ pub struct MaekExpressionNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct ItReferenceNode {
+pub struct ItNumberReferenceNode {
+    pub token: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct ItNumbarReferenceNode {
+    pub token: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct ItYarnReferenceNode {
+    pub token: TokenNode,
+}
+
+#[derive(Debug, Clone)]
+pub struct ItTroofReferenceNode {
     pub token: TokenNode,
 }
 

@@ -673,10 +673,34 @@ impl<'a> Parser<'a> {
             }
         }
 
-        if self.special_check("Word_IT") {
-            if let Some(it_reference) = self.parse_it_reference() {
+        if self.special_check("Word_IT_NUMBER") {
+            if let Some(it_number_reference) = self.parse_it_number_reference() {
                 return Some(ast::ExpressionNode {
-                    value: ast::ExpressionNodeValueOption::ItReference(it_reference),
+                    value: ast::ExpressionNodeValueOption::ItNumberReference(it_number_reference),
+                });
+            }
+        }
+
+        if self.special_check("Word_IT_NUMBAR") {
+            if let Some(it_numbar_reference) = self.parse_it_numbar_reference() {
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::ItNumbarReference(it_numbar_reference),
+                });
+            }
+        }
+
+        if self.special_check("Word_IT_YARN") {
+            if let Some(it_yarn_reference) = self.parse_it_yarn_reference() {
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::ItYarnReference(it_yarn_reference),
+                });
+            }
+        }
+
+        if self.special_check("Word_IT_TROOF") {
+            if let Some(it_troof_reference) = self.parse_it_troof_reference() {
+                return Some(ast::ExpressionNode {
+                    value: ast::ExpressionNodeValueOption::ItTroofReference(it_troof_reference),
                 });
             }
         }
@@ -1706,20 +1730,74 @@ impl<'a> Parser<'a> {
         None
     }
 
-    pub fn parse_it_reference(&mut self) -> Option<ast::ItReferenceNode> {
+    pub fn parse_it_number_reference(&mut self) -> Option<ast::ItNumberReferenceNode> {
         self.next_level();
 
-        let token = self.special_consume("Word_IT");
+        let token = self.special_consume("Word_IT_NUMBER");
         if let None = token {
             self.create_error(ParserError {
-                message: "Expected IT keyword for it reference",
+                message: "Expected IT_NUMBER keyword for it number reference",
                 token: self.peek(),
             });
             return None;
         }
 
         self.prev_level();
-        Some(ast::ItReferenceNode {
+        Some(ast::ItNumberReferenceNode {
+            token: token.unwrap(),
+        })
+    }
+
+    pub fn parse_it_numbar_reference(&mut self) -> Option<ast::ItNumbarReferenceNode> {
+        self.next_level();
+
+        let token = self.special_consume("Word_IT_NUMBAR");
+        if let None = token {
+            self.create_error(ParserError {
+                message: "Expected IT_NUMBAR keyword for it numbar reference",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::ItNumbarReferenceNode {
+            token: token.unwrap(),
+        })
+    }
+
+    pub fn parse_it_yarn_reference(&mut self) -> Option<ast::ItYarnReferenceNode> {
+        self.next_level();
+
+        let token = self.special_consume("Word_IT_YARN");
+        if let None = token {
+            self.create_error(ParserError {
+                message: "Expected IT_YARN keyword for it yarn reference",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::ItYarnReferenceNode {
+            token: token.unwrap(),
+        })
+    }
+
+    pub fn parse_it_troof_reference(&mut self) -> Option<ast::ItTroofReferenceNode> {
+        self.next_level();
+
+        let token = self.special_consume("Word_IT_TROOF");
+        if let None = token {
+            self.create_error(ParserError {
+                message: "Expected IT_TROOF keyword for it troof reference",
+                token: self.peek(),
+            });
+            return None;
+        }
+
+        self.prev_level();
+        Some(ast::ItTroofReferenceNode {
             token: token.unwrap(),
         })
     }
