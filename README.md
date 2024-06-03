@@ -36,15 +36,16 @@ In fact, we have only added 3 instructions (and changed some) for compatability 
 | `store(size: i32);` | Pop a number off of the stack, and go to where this number points in the heap. Then, pop `size` numbers off of the stack. Store these numbers in reverse order at this location in the heap. |
 | `load(size: i32);` | Pop a number off of the stack, and go to where this number points in the heap. Then, push `size` number of consecutive memory cells onto the stack. |
 | `copy();` | Pop a number off of the stack, and go to where base_ptr - this number points in the stack. Then push the value in the stack back onto the stack again.  |
+| `mov();` | Pop a number off of the stack, and go to where base_ptr - this number points in the stack. Then pop another number off the stack. Put that number at that location in the stack.  |
 | `call(fn: i32);` | Call a user defined function by it's compiler assigned ID. |
 | `call_foreign_fn(name: String);` | Call a foreign function by its name in source. |
 | `begin_while();` | Start a while loop. For each iteration, pop a number off of the stack. If the number is not zero, continue the loop. |
 | `end_while();` | Mark the end of a while loop. |
 | `load_base_ptr();` | Load the base pointer of the established stack frame, which is always less than or equal to the stack pointer. |
-| `establish_stack_frame();` | Calls `load_base_ptr` and sets the base_ptr to the current stack address |
+| `establish_stack_frame();` | Calls `load_base_ptr` and sets the base_ptr to the current stack address. |
 | `end_stack_frame(arg_size: i32, local_scope_size: i32);` | Pop `local_scope_size` numbers off of the stack. Then, restore the base_ptr by popping another number off the stack. Next, pop the return address (next instruction address) of off the stack. Finally, pop `arg_size` numbers off of the stack. |
-| `set_return_register();` | Pop a number off of the stack, and set the return register to its value |
-| `access_return_register();` | Push return register's value to the stack |
+| `set_return_register();` | Pop a number off of the stack, and set the return register to its value. |
+| `access_return_register();` | Push return register's value to the stack. |
 
 Here is how the base_ptr works:
 

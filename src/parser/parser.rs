@@ -1933,6 +1933,9 @@ impl<'a> Parser<'a> {
                 message: "Expected R keyword to assign variable",
                 token: self.peek(),
             });
+            if let Some(dec) = var_dec {
+                self.stmts.push(dec);
+            }
             self.reset(start);
             return None;
         }
@@ -1943,6 +1946,9 @@ impl<'a> Parser<'a> {
                 message: "Expected valid expression for variable assignment",
                 token: self.peek(),
             });
+            if let Some(dec) = var_dec {
+                self.stmts.push(dec);
+            }
             self.reset(start);
             return None;
         }

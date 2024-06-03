@@ -1,5 +1,6 @@
 use crate::compiler::target::Target;
 
+#[derive(Debug, Clone)]
 pub enum IRStatement {
     Push(f32),
     Add,
@@ -12,6 +13,7 @@ pub enum IRStatement {
     Store(i32),
     Load(i32),
     Copy,
+    Mov,
     Call(String),
     CallForeign(String),
     BeginWhile,
@@ -37,6 +39,7 @@ impl IRStatement {
             IRStatement::Store(floats) => target.store(*floats),
             IRStatement::Load(floats) => target.load(*floats),
             IRStatement::Copy => target.f_copy(),
+            IRStatement::Mov => target.mov(),
             IRStatement::Call(name) => target.call_fn(name.clone()),
             IRStatement::CallForeign(name) => target.call_foreign_fn(name.clone()),
             IRStatement::BeginWhile => target.begin_while(),
@@ -52,6 +55,7 @@ impl IRStatement {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IRFunction {
     pub name: String,
     pub statements: Vec<IRStatement>,
@@ -78,6 +82,7 @@ impl IRFunction {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IRFunctionEntry {
     pub stack_size: i32,
     pub heap_size: i32,
@@ -113,6 +118,7 @@ impl IRFunctionEntry {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IR {
     pub functions: Vec<IRFunction>,
     pub entry: IRFunctionEntry,

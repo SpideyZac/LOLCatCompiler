@@ -30,6 +30,7 @@ pub trait Target {
     fn store(&self, floats: i32) -> String;
     fn load(&self, floats: i32) -> String;
     fn f_copy(&self) -> String;
+    fn mov(&self) -> String;
 
     fn fn_header(&self, name: String) -> String;
     fn fn_definition(&self, name: String, body: String) -> String;

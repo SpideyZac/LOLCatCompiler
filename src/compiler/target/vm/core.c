@@ -198,6 +198,17 @@ void machine_copy(machine *vm) {
     machine_push(vm, vm->stack[vm->base_ptr - offset]);
 }
 
+void machine_mov(machine *vm) {
+    for (int i = 0; i < vm->stack_pointer; i++) {
+        printf("%f ", vm->stack[i]);
+    }
+
+    int offset = machine_pop(vm);
+    float value = machine_pop(vm);
+
+    vm->stack[vm->base_ptr - offset] = value;
+}
+
 void machine_add(machine *vm) {
     machine_push(vm, machine_pop(vm) + machine_pop(vm));
 }

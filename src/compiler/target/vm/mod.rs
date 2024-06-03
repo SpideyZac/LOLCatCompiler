@@ -106,6 +106,10 @@ impl Target for VM {
         String::from("machine_copy(vm);\n")
     }
 
+    fn mov(&self) -> String {
+        String::from("machine_mov(vm);\n")
+    }
+
     fn fn_header(&self, name: String) -> String {
         format!("void {}(machine* vm);\n", name)
     }

@@ -5,15 +5,15 @@ pub mod utils;
 
 use compiler::target::Target;
 
-use crate::compiler::ir::{IRFunction, IRFunctionEntry, IRStatement, IR};
-use crate::compiler::target::vm::VM;
+use crate::compiler::target as targ;
+use crate::compiler::visit as v;
 use crate::lexer::lexer as l;
 use crate::lexer::tokens as t;
 use crate::parser::parser as p;
 use crate::utils::get_line;
 
 fn main() {
-    let contents = "HAI 1.2\nHOW IZ I sum ITZ NUMBER YR a ITZ NOOB AN YR b ITZ NUMBER\nFOUND YR SUM OF a AN b\nIF U SAY SO\nKTHXBYE";
+    let contents = "HAI 1.2\nI HAS A x ITZ NUMBER\nX R 3\nKTHXBYE";
     let lines = contents.split("\n").collect::<Vec<&str>>();
 
     let mut l = l::Lexer::init(contents);
@@ -74,49 +74,31 @@ fn main() {
         return;
     }
 
-    let t = VM {};
+    let mut v = v::Visitor::new(p, 100, 400);
+    let (ir, errors) = v.visit();
 
-    let ir = IR::new(
-        vec![IRFunction::new(
-            "sum".to_string(),
-            vec![
-                IRStatement::EstablishStackFrame,
-                IRStatement::Push(2.0),
-                IRStatement::Copy,
-                IRStatement::Push(3.0),
-                IRStatement::Copy,
-                IRStatement::Add,
-                IRStatement::SetReturnRegister,
-                IRStatement::AccessReturnRegister,
-                IRStatement::Push(4.0),
-                IRStatement::Copy,
-                IRStatement::Store(1),
-                IRStatement::EndStackFrame(2, 0),
-            ],
-        )],
-        IRFunctionEntry::new(
-            100,
-            400,
-            vec![
-                IRStatement::Push(4.0),
-                IRStatement::Push(4.0),
-                IRStatement::Allocate,
-                IRStatement::Push(2.0),
-                IRStatement::Push(1.0),
-                IRStatement::Call("sum".to_string()),
-                IRStatement::AccessReturnRegister,
-                IRStatement::CallForeign("prn".to_string()),
-                IRStatement::CallForeign("prend".to_string()),
-                IRStatement::Push(-2.0),
-                IRStatement::Copy,
-                IRStatement::Load(1),
-                IRStatement::CallForeign("prn".to_string()),
-                IRStatement::CallForeign("prend".to_string()),
-                IRStatement::Free,
-            ],
-        ),
-    );
+    for error in errors.iter() {
+        let token = &error.token.token;
 
-    let code = ir.assemble(&t);
-    t.compile(code).expect("Failed to compile");
+        let (line, count) = get_line(&lines, token.start);
+
+        println!("{}", lines[line]);
+        let arrow = " ".repeat(token.start - count) + "^".repeat(token.end - token.start).as_str();
+        println!("{}", arrow);
+        println!(
+            "Error: {} at line {}, column {}:{}",
+            error.message,
+            line + 1,
+            token.start - count + 1,
+            token.end - count + 1
+        );
+    }
+    if errors.len() > 0 {
+        return;
+    }
+
+    let target = targ::vm::VM {};
+
+    let asm = ir.assemble(&target);
+    let _ = target.compile(asm).unwrap();
 }
