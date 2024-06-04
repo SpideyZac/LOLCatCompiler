@@ -80,9 +80,9 @@ pub struct NumberValueNode {
 }
 
 impl NumberValueNode {
-    pub fn value(&self) -> i64 {
+    pub fn value(&self) -> i32 {
         if let tokens::Token::NumberValue(value) = self.token.value() {
-            value.parse::<i64>().unwrap()
+            value.parse::<i32>().unwrap()
         } else {
             panic!("Expected NumberValue token")
         }
