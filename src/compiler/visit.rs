@@ -81,6 +81,7 @@ pub struct Visitor<'a> {
     ir: ir::IR,
     errors: Vec<VisitorError>,
     program_state: ProgramState,
+    first_it_yarn: bool,
 }
 
 impl<'a> Visitor<'a> {
@@ -118,6 +119,7 @@ impl<'a> Visitor<'a> {
                 },
                 function_states: HashMap::new(),
             },
+            first_it_yarn: true,
         };
 
         visitor
@@ -192,7 +194,8 @@ impl<'a> Visitor<'a> {
     pub fn visit_statement(&mut self, statement: ast::StatementNode) {
         match statement.value {
             ast::StatementNodeValueOption::Expression(expr) => {
-                let (type_, _) = self.visit_expression(expr.clone());
+                let (type_, _) = self
+                    .visit_expression(expr.clone(), if self.first_it_yarn { false } else { true });
                 // save to IT with type_
                 if type_ != VariableTypes::Noob {
                     let scope = self.program_state.get_scope();
@@ -202,6 +205,31 @@ impl<'a> Visitor<'a> {
                             self.add_statements(vec![
                                 ir::IRStatement::Push(
                                     *scope.variable_addresses.get("IT_NUMBER").unwrap() as f32,
+                                ),
+                                ir::IRStatement::Mov,
+                            ]);
+                        }
+                        VariableTypes::Numbar => {
+                            self.add_statements(vec![
+                                ir::IRStatement::Push(
+                                    *scope.variable_addresses.get("IT_NUMBAR").unwrap() as f32,
+                                ),
+                                ir::IRStatement::Mov,
+                            ]);
+                        }
+                        VariableTypes::Yarn => {
+                            self.first_it_yarn = false;
+                            self.add_statements(vec![
+                                ir::IRStatement::Push(
+                                    *scope.variable_addresses.get("IT_YARN").unwrap() as f32,
+                                ),
+                                ir::IRStatement::Mov,
+                            ]);
+                        }
+                        VariableTypes::Troof => {
+                            self.add_statements(vec![
+                                ir::IRStatement::Push(
+                                    *scope.variable_addresses.get("IT_TROOF").unwrap() as f32,
                                 ),
                                 ir::IRStatement::Mov,
                             ]);
@@ -224,11 +252,43 @@ impl<'a> Visitor<'a> {
     pub fn visit_expression(
         &mut self,
         expression: ast::ExpressionNode,
+        string_free: bool,
     ) -> (VariableTypes, ast::TokenNode) {
         match expression.value {
             ast::ExpressionNodeValueOption::NumberValue(number_value) => {
                 self.visit_number_value(number_value.clone());
                 (VariableTypes::Number, number_value.token.clone())
+            }
+            ast::ExpressionNodeValueOption::NumbarValue(numbar_value) => {
+                self.visit_numbar_value(numbar_value.clone());
+                (VariableTypes::Numbar, numbar_value.token.clone())
+            }
+            ast::ExpressionNodeValueOption::YarnValue(yarn_value) => {
+                if string_free {
+                    let scope = self.program_state.get_scope();
+                    self.add_statements(vec![
+                        ir::IRStatement::Push(
+                            *scope.variable_addresses.get("IT_YARN").unwrap() as f32
+                        ),
+                        ir::IRStatement::Copy,
+                        ir::IRStatement::Load(1), // get the size
+                        ir::IRStatement::Push(1.0),
+                        ir::IRStatement::Add,
+                        ir::IRStatement::Push(4.0),
+                        ir::IRStatement::Multiply,
+                        ir::IRStatement::Push(
+                            *scope.variable_addresses.get("IT_YARN").unwrap() as f32
+                        ),
+                        ir::IRStatement::Copy,
+                        ir::IRStatement::Free,
+                    ]);
+                }
+                self.visit_yarn_value(yarn_value.clone());
+                (VariableTypes::Yarn, yarn_value.token.clone())
+            }
+            ast::ExpressionNodeValueOption::TroofValue(troof_value) => {
+                self.visit_troof_value(troof_value.clone());
+                (VariableTypes::Troof, troof_value.token.clone())
             }
             _ => {
                 panic!("Unexpected expression")
@@ -238,5 +298,40 @@ impl<'a> Visitor<'a> {
 
     pub fn visit_number_value(&mut self, number_value: ast::NumberValueNode) {
         self.add_statements(vec![ir::IRStatement::Push(number_value.value() as f32)]);
+    }
+
+    pub fn visit_numbar_value(&mut self, numbar_value: ast::NumbarValueNode) {
+        self.add_statements(vec![ir::IRStatement::Push(numbar_value.value())]);
+    }
+
+    pub fn visit_yarn_value(&mut self, yarn_value: ast::YarnValueNode) {
+        // yarn stores a pointer to the string on the heap
+        let chars = yarn_value.value().chars().collect::<Vec<char>>();
+        self.add_statements(vec![
+            ir::IRStatement::Push((chars.len() as i32 as f32 + 1.0) * 4.0), // store length + 1
+            ir::IRStatement::Allocate, // allocate space on the heap
+        ]);
+        self.add_statements(vec![ir::IRStatement::Push(chars.len() as i32 as f32)]); // store length
+        for char in chars.iter() {
+            self.add_statements(vec![ir::IRStatement::Push(*char as i32 as f32)]);
+            // store char
+        }
+        self.add_statements(vec![
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + 1.0),
+            ), // This is the address of the heap_ptr for the string
+            ir::IRStatement::Copy, // duplicate this value
+            ir::IRStatement::Store(chars.len() as i32 + 1), // store the string at the address
+        ]);
+    }
+
+    pub fn visit_troof_value(&mut self, troof_value: ast::TroofValueNode) {
+        self.add_statements(vec![ir::IRStatement::Push(if troof_value.value() {
+            1.0
+        } else {
+            0.0
+        })]);
     }
 }
