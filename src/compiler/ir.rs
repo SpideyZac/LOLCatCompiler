@@ -23,6 +23,7 @@ pub enum IRStatement {
     EndStackFrame(i32, i32),
     SetReturnRegister,
     AccessReturnRegister,
+    Halt,
 }
 
 impl IRStatement {
@@ -51,6 +52,7 @@ impl IRStatement {
             }
             IRStatement::SetReturnRegister => target.set_return_register(),
             IRStatement::AccessReturnRegister => target.access_return_register(),
+            IRStatement::Halt => target.halt(),
         }
     }
 }

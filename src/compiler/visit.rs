@@ -212,6 +212,9 @@ impl<'a> Visitor<'a> {
                     }
                 }
             }
+            ast::StatementNodeValueOption::KTHXBYEStatement(_) => {
+                self.add_statements(vec![ir::IRStatement::Halt]);
+            }
             _ => {
                 panic!("Unexpected statement")
             }

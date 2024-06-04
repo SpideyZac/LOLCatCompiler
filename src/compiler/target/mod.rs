@@ -40,5 +40,7 @@ pub trait Target {
     fn begin_while(&self) -> String;
     fn end_while(&self) -> String;
 
+    fn halt(&self) -> String;
+
     fn compile(&self, code: String) -> std::io::Result<()>;
 }

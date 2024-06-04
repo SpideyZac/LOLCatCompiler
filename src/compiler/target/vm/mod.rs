@@ -134,6 +134,10 @@ impl Target for VM {
         String::from("}\n")
     }
 
+    fn halt(&self) -> String {
+        String::from("machine_halt(vm);\n")
+    }
+
     fn compile(&self, code: String) -> Result<()> {
         let exe_path = current_exe()?;
         let exe_dir = exe_path.parent().unwrap();

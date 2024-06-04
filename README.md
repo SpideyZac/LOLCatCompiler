@@ -22,7 +22,7 @@ If the tiny c compiler is not found, it will default to use `gcc`.
 # IR (Intermediate Representation)
 LOLCatCompiler's IR takes inspiration from [oakc's intermediate representation](https://github.com/adam-mcdaniel/oakc?tab=readme-ov-file#intermediate-representation)
 
-In fact, we have only added 4 instructions (and changed some) for compatability with assembly! (**MAY CHANGE**)
+In fact, we have only added 5 instructions (and changed some) for compatability with assembly! (**MAY CHANGE**)
 | Instruction | Side Effect |
 |-|-|
 | `push(n: f32);` | Push a number onto the stack. |
@@ -46,6 +46,7 @@ In fact, we have only added 4 instructions (and changed some) for compatability 
 | `end_stack_frame(arg_size: i32, local_scope_size: i32);` | Pop `local_scope_size` numbers off of the stack. Then, restore the base_ptr by popping another number off the stack. Next, pop the return address (next instruction address) of off the stack. Finally, pop `arg_size` numbers off of the stack. |
 | `set_return_register();` | Pop a number off of the stack, and set the return register to its value. |
 | `access_return_register();` | Push return register's value to the stack. |
+| `halt();` | Ends the program. |
 
 Here is how the base_ptr works:
 

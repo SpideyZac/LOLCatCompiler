@@ -233,3 +233,8 @@ void machine_sign(machine *vm) {
         machine_push(vm, -1);
     }
 }
+
+void machine_halt(machine *vm) {
+    machine_drop(vm);
+    exit(0);
+}
