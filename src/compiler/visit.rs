@@ -11,6 +11,10 @@ pub enum VariableTypes {
     Numbar,
     Yarn,
     Troof,
+    ArgNumber,
+    ArgNumbar,
+    ArgYarn,
+    ArgTroof,
 }
 
 impl VariableTypes {
@@ -20,6 +24,10 @@ impl VariableTypes {
             VariableTypes::Numbar => "NUMBAR".to_string(),
             VariableTypes::Yarn => "YARN".to_string(),
             VariableTypes::Troof => "TROOF".to_string(),
+            VariableTypes::ArgNumber => "ARG_NUMBER".to_string(),
+            VariableTypes::ArgNumbar => "ARG_NUMBAR".to_string(),
+            VariableTypes::ArgYarn => "ARG_YARN".to_string(),
+            VariableTypes::ArgTroof => "ARG_TROOF".to_string(),
         }
     }
 }
@@ -30,9 +38,6 @@ pub struct ScopeState {
     pub variable_map: HashMap<String, VariableTypes>,
     pub variable_addresses: HashMap<String, i32>,
     pub parent: Option<Box<ScopeState>>,
-    pub arguments: i32,
-    pub argument_map: HashMap<String, VariableTypes>,
-    pub argument_addresses: HashMap<String, i32>,
     pub sub_scopes: Vec<ScopeState>,
 }
 
@@ -85,9 +90,6 @@ impl<'a> Visitor<'a> {
                     variable_map: HashMap::new(),
                     variable_addresses: HashMap::new(),
                     parent: None,
-                    arguments: 0,
-                    argument_map: HashMap::new(),
-                    argument_addresses: HashMap::new(),
                     sub_scopes: vec![],
                 },
                 function_states: vec![],
@@ -371,17 +373,12 @@ impl<'a> Visitor<'a> {
         };
 
         if self.program_state.is_inside_entry {
-            if self
+            let scope = self
                 .program_state
                 .entry_function_state
-                .variable_map
-                .contains_key(&name)
-                || self
-                    .program_state
-                    .entry_function_state
-                    .argument_map
-                    .contains_key(&name)
-            {
+                .get_variable(name.clone());
+
+            if let Some(_) = scope {
                 self.errors.push(VisitorError {
                     message: format!("Variable {} already declared", name),
                     token: variable_declaration_statement.identifier.clone(),
@@ -403,9 +400,8 @@ impl<'a> Visitor<'a> {
                 .find_function_index_by_name(self.program_state.function_name.clone())
                 .unwrap();
             let function = &mut self.program_state.function_states[index];
-            if function.variable_map.contains_key(&name)
-                || function.argument_map.contains_key(&name)
-            {
+            let scope = function.get_variable(name.clone());
+            if let Some(_) = scope {
                 self.errors.push(VisitorError {
                     message: format!("Variable {} already declared", name),
                     token: variable_declaration_statement.identifier.clone(),
