@@ -13,7 +13,7 @@ use crate::parser::parser as p;
 use crate::utils::get_line;
 
 fn main() {
-    let contents = "HAI 1.2\nI HAS A x ITZ YARN R WIN\nKTHXBYE";
+    let contents = "HAI 1.2\nI HAS A x ITZ YARN R \"hello\",I HAS A y ITZ NUMBER R x\nKTHXBYE";
     let lines = contents.split("\n").collect::<Vec<&str>>();
 
     let mut l = l::Lexer::init(contents);

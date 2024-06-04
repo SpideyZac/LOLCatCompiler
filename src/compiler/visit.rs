@@ -33,6 +33,21 @@ pub struct ScopeState {
     pub arguments: i32,
     pub argument_map: HashMap<String, VariableTypes>,
     pub argument_addresses: HashMap<String, i32>,
+    pub sub_scopes: Vec<ScopeState>,
+}
+
+impl ScopeState {
+    pub fn get_variable(&self, name: String) -> Option<ScopeState> {
+        if self.variable_map.contains_key(&name) {
+            return Some(self.clone());
+        }
+
+        if let Some(parent) = &self.parent {
+            return parent.get_variable(name);
+        }
+
+        None
+    }
 }
 
 pub struct ProgramState {
@@ -73,6 +88,7 @@ impl<'a> Visitor<'a> {
                     arguments: 0,
                     argument_map: HashMap::new(),
                     argument_addresses: HashMap::new(),
+                    sub_scopes: vec![],
                 },
                 function_states: vec![],
             },
@@ -223,6 +239,19 @@ impl<'a> Visitor<'a> {
                     });
                 }
             }
+            ast::ExpressionNodeValueOption::VariableReference(variable_reference) => {
+                let return_type = self.visit_variable_reference(variable_reference.clone());
+                if return_type != expected_type {
+                    self.errors.push(VisitorError {
+                        message: format!(
+                            "Expected type {}, got {}",
+                            expected_type.to_string(),
+                            return_type.to_string()
+                        ),
+                        token: variable_reference.identifier.clone(),
+                    });
+                }
+            }
             _ => {}
         }
     }
@@ -261,6 +290,63 @@ impl<'a> Visitor<'a> {
         } else {
             0.0
         })]);
+    }
+
+    pub fn visit_variable_reference(
+        &mut self,
+        variable_reference: ast::VariableReferenceNode,
+    ) -> VariableTypes {
+        let name = match variable_reference.identifier.value() {
+            tokens::Token::Identifier(name) => name,
+            _ => panic!("Unexpected token"),
+        }
+        .clone();
+
+        if self.program_state.is_inside_entry {
+            if let None = self
+                .program_state
+                .entry_function_state
+                .get_variable(name.clone())
+            {
+                self.errors.push(VisitorError {
+                    message: format!("Variable {} not declared", name),
+                    token: variable_reference.identifier.clone(),
+                });
+                return VariableTypes::Number;
+            }
+
+            let scope = self
+                .program_state
+                .entry_function_state
+                .get_variable(name.clone())
+                .unwrap();
+
+            let address = *scope.variable_addresses.get(&name).unwrap() as f32;
+
+            self.add_statements(vec![ir::IRStatement::Push(address), ir::IRStatement::Copy]);
+            return scope.variable_map.get(&name).unwrap().clone();
+        } else {
+            let index = self
+                .find_function_index_by_name(self.program_state.function_name.clone())
+                .unwrap();
+            let function = &mut self.program_state.function_states[index];
+            let clone = function.clone();
+
+            if let None = clone.get_variable(name.clone()) {
+                self.errors.push(VisitorError {
+                    message: format!("Variable {} not declared", name),
+                    token: variable_reference.identifier.clone(),
+                });
+                return VariableTypes::Number;
+            }
+
+            let scope = clone.get_variable(name.clone()).unwrap();
+
+            let address = *scope.variable_addresses.get(&name).unwrap() as f32;
+
+            self.add_statements(vec![ir::IRStatement::Push(address), ir::IRStatement::Copy]);
+            return scope.variable_map.get(&name).unwrap().clone();
+        }
     }
 
     pub fn visit_variable_declaration_statement(
@@ -349,11 +435,10 @@ impl<'a> Visitor<'a> {
             .clone();
 
             if self.program_state.is_inside_entry {
-                if !self
+                if let None = self
                     .program_state
                     .entry_function_state
-                    .variable_map
-                    .contains_key(&name)
+                    .get_variable(name.clone())
                 {
                     self.errors.push(VisitorError {
                         message: format!("Variable {} not declared", name),
@@ -362,14 +447,15 @@ impl<'a> Visitor<'a> {
                     return;
                 }
 
+                let scope = self
+                    .program_state
+                    .entry_function_state
+                    .get_variable(name.clone())
+                    .unwrap();
+
                 self.visit_expression(
                     variable_assignment_statement.expression.clone(),
-                    self.program_state
-                        .entry_function_state
-                        .variable_map
-                        .get(&name)
-                        .unwrap()
-                        .clone(),
+                    scope.variable_map.get(&name).unwrap().clone(),
                 );
                 self.add_statements(vec![
                     ir::IRStatement::Push(
@@ -389,7 +475,7 @@ impl<'a> Visitor<'a> {
                 let function_states = &mut self.program_state.function_states;
                 let function = &mut function_states[index];
                 let clone = function.clone();
-                if !function.variable_map.contains_key(&name) {
+                if let None = clone.get_variable(name.clone()) {
                     self.errors.push(VisitorError {
                         message: format!("Variable {} not declared", name),
                         token: ident.clone(),
@@ -397,7 +483,9 @@ impl<'a> Visitor<'a> {
                     return;
                 }
 
-                let address = *function.variable_addresses.get(&name).unwrap() as f32;
+                let scope = clone.get_variable(name.clone()).unwrap();
+
+                let address = *scope.variable_addresses.get(&name).unwrap() as f32;
 
                 self.visit_expression(
                     variable_assignment_statement.expression.clone(),
