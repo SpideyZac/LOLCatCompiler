@@ -102,10 +102,58 @@ pub struct Visitor<'a> {
     ir: ir::IR,
     errors: Vec<VisitorError>,
     program_state: ProgramState,
+    extras: i32,
 }
 
 impl<'a> Visitor<'a> {
     pub fn add_statements(&mut self, statements: Vec<ir::IRStatement>) {
+        for statement in statements.iter() {
+            match statement {
+                &ir::IRStatement::Push(_) => {
+                    self.extras += 1;
+                }
+                &ir::IRStatement::AccessReturnRegister => {
+                    self.extras += 1;
+                }
+                &ir::IRStatement::Add => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::Divide => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::Free => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::Load(x) => {
+                    self.extras += x - 1;
+                }
+                &ir::IRStatement::LoadBasePtr => {
+                    self.extras += 1;
+                }
+                &ir::IRStatement::Modulo => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::Mov => {
+                    self.extras -= 2;
+                }
+                &ir::IRStatement::Multiply => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::SetReturnRegister => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::Sign => {
+                    self.extras += 1;
+                }
+                &ir::IRStatement::Store(x) => {
+                    self.extras -= x + 1;
+                }
+                &ir::IRStatement::Subtract => {
+                    self.extras -= 1;
+                }
+                _ => {}
+            }
+        }
         if self.program_state.is_inside_entry {
             self.ir.entry.statements.extend(statements);
         } else {
@@ -139,6 +187,7 @@ impl<'a> Visitor<'a> {
                 },
                 function_states: HashMap::new(),
             },
+            extras: 0,
         };
 
         visitor
@@ -274,6 +323,7 @@ impl<'a> Visitor<'a> {
                 panic!("Unexpected statement")
             }
         }
+        self.extras = 0;
     }
 
     pub fn visit_expression(
@@ -342,6 +392,7 @@ impl<'a> Visitor<'a> {
             ir::IRStatement::Push((chars.len() as i32 as f32 + 1.0) * 4.0), // store length + 1
             ir::IRStatement::Allocate, // allocate space on the heap
         ]);
+        let extras = self.extras;
         self.add_statements(vec![ir::IRStatement::Push(chars.len() as i32 as f32)]); // store length
         for char in chars.iter() {
             self.add_statements(vec![ir::IRStatement::Push(*char as i32 as f32)]);
@@ -351,7 +402,7 @@ impl<'a> Visitor<'a> {
             ir::IRStatement::Push(
                 -(self.program_state.get_scope().variables as f32
                     - self.program_state.get_scope().arguments as f32
-                    + 1.0),
+                    + extras as f32),
             ), // This is the address of the heap_ptr for the string
             ir::IRStatement::Copy, // duplicate this value
             ir::IRStatement::Store(chars.len() as i32 + 1), // store the string at the address
