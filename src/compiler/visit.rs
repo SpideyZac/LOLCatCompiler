@@ -102,7 +102,7 @@ pub struct Visitor<'a> {
     ir: ir::IR,
     errors: Vec<VisitorError>,
     program_state: ProgramState,
-    extras: i32,
+    extras: i32, // how many extra values are on the stack (after the last local variable) - is reset after each statement as all excess values should be popped
 }
 
 impl<'a> Visitor<'a> {
@@ -112,46 +112,52 @@ impl<'a> Visitor<'a> {
                 &ir::IRStatement::Push(_) => {
                     self.extras += 1;
                 }
-                &ir::IRStatement::AccessReturnRegister => {
-                    self.extras += 1;
-                }
                 &ir::IRStatement::Add => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::Subtract => {
+                    self.extras -= 1;
+                }
+                &ir::IRStatement::Multiply => {
                     self.extras -= 1;
                 }
                 &ir::IRStatement::Divide => {
                     self.extras -= 1;
                 }
-                &ir::IRStatement::Free => {
-                    self.extras -= 1;
-                }
-                &ir::IRStatement::Load(x) => {
-                    self.extras += x - 1;
-                }
-                &ir::IRStatement::LoadBasePtr => {
-                    self.extras += 1;
-                }
                 &ir::IRStatement::Modulo => {
                     self.extras -= 1;
                 }
+                &ir::IRStatement::Sign => {}
+                &ir::IRStatement::Allocate => {}
+                &ir::IRStatement::Free => {
+                    self.extras -= 2;
+                }
+                &ir::IRStatement::Store(size) => {
+                    self.extras -= size + 1;
+                }
+                &ir::IRStatement::Load(size) => {
+                    self.extras += size + 1;
+                }
+                &ir::IRStatement::Copy => {}
                 &ir::IRStatement::Mov => {
                     self.extras -= 2;
                 }
-                &ir::IRStatement::Multiply => {
-                    self.extras -= 1;
+                &ir::IRStatement::Call(_) => {}
+                &ir::IRStatement::CallForeign(_) => {}
+                &ir::IRStatement::BeginWhile => {}
+                &ir::IRStatement::EndWhile => {}
+                &ir::IRStatement::LoadBasePtr => {
+                    self.extras += 1;
                 }
+                &ir::IRStatement::EstablishStackFrame => {}
+                &ir::IRStatement::EndStackFrame(_, _) => {}
                 &ir::IRStatement::SetReturnRegister => {
                     self.extras -= 1;
                 }
-                &ir::IRStatement::Sign => {
+                &ir::IRStatement::AccessReturnRegister => {
                     self.extras += 1;
                 }
-                &ir::IRStatement::Store(x) => {
-                    self.extras -= x + 1;
-                }
-                &ir::IRStatement::Subtract => {
-                    self.extras -= 1;
-                }
-                _ => {}
+                &ir::IRStatement::Halt => {}
             }
         }
         if self.program_state.is_inside_entry {
