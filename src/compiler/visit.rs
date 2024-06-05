@@ -182,7 +182,7 @@ impl<'a> Visitor<'a> {
                     if *scope.variable_map.get("IT").unwrap() == VariableTypes::Yarn {
                         self.add_statements(vec![
                             ir::IRStatement::Push(
-                                *scope.variable_addresses.get("IT").unwrap() as f32,
+                                *scope.variable_addresses.get("IT").unwrap() as f32
                             ),
                             ir::IRStatement::Copy,
                             ir::IRStatement::Load(1), // get the size
@@ -191,7 +191,7 @@ impl<'a> Visitor<'a> {
                             ir::IRStatement::Push(4.0),
                             ir::IRStatement::Multiply,
                             ir::IRStatement::Push(
-                                *scope.variable_addresses.get("IT").unwrap() as f32,
+                                *scope.variable_addresses.get("IT").unwrap() as f32
                             ),
                             ir::IRStatement::Copy,
                             ir::IRStatement::Free,
