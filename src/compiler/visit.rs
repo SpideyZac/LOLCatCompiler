@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::compiler::ir;
+use crate::lexer::tokens;
 use crate::parser::ast;
 use crate::parser::parser;
 
@@ -48,6 +49,18 @@ impl ScopeState {
 
         None
     }
+
+    pub fn get_variable_mut(&mut self, name: String) -> Option<&mut ScopeState> {
+        if self.variable_map.contains_key(&name) {
+            return Some(self);
+        }
+
+        if let Some(parent) = &mut self.parent {
+            return parent.get_variable_mut(name);
+        }
+
+        None
+    }
 }
 
 pub struct ProgramState {
@@ -67,6 +80,14 @@ impl ProgramState {
             .get(&self.function_name)
             .unwrap()
             .clone()
+    }
+
+    pub fn get_mut_scope(&mut self) -> &mut ScopeState {
+        if self.is_inside_entry {
+            return &mut self.entry_function_state;
+        }
+
+        self.function_states.get_mut(&self.function_name).unwrap()
     }
 }
 
@@ -240,6 +261,12 @@ impl<'a> Visitor<'a> {
                     }
                 }
             }
+            ast::StatementNodeValueOption::VariableDeclarationStatement(var_decl) => {
+                self.visit_variable_declaration(var_decl.clone());
+            }
+            ast::StatementNodeValueOption::VariableAssignmentStatement(var_assign) => {
+                self.visit_variable_assignment(var_assign.clone());
+            }
             ast::StatementNodeValueOption::KTHXBYEStatement(_) => {
                 self.add_statements(vec![ir::IRStatement::Halt]);
             }
@@ -290,6 +317,10 @@ impl<'a> Visitor<'a> {
                 self.visit_troof_value(troof_value.clone());
                 (VariableTypes::Troof, troof_value.token.clone())
             }
+            ast::ExpressionNodeValueOption::VariableReference(variable_ref) => {
+                let type_ = self.visit_variable_reference(variable_ref.clone());
+                (type_, variable_ref.identifier.clone())
+            }
             _ => {
                 panic!("Unexpected expression")
             }
@@ -333,5 +364,171 @@ impl<'a> Visitor<'a> {
         } else {
             0.0
         })]);
+    }
+
+    pub fn visit_variable_reference(
+        &mut self,
+        variable_ref: ast::VariableReferenceNode,
+    ) -> VariableTypes {
+        let scope = self.program_state.get_scope();
+        let identifier = match &variable_ref.identifier.token.token {
+            tokens::Token::Identifier(ident) => ident.clone(),
+            _ => {
+                panic!("Expected identifier token");
+            }
+        };
+
+        let sub_scope = scope.get_variable(identifier.clone());
+        if let None = sub_scope {
+            self.errors.push(VisitorError {
+                message: format!("Variable {} not declared", identifier),
+                token: variable_ref.identifier.clone(),
+            });
+            return VariableTypes::Noob;
+        }
+
+        let sub_scope = sub_scope.unwrap();
+        let type_ = sub_scope.variable_map.get(&identifier).unwrap().clone();
+        let address = sub_scope
+            .variable_addresses
+            .get(&identifier)
+            .unwrap()
+            .clone();
+        self.add_statements(vec![
+            ir::IRStatement::Push(address as f32),
+            ir::IRStatement::Copy,
+        ]);
+
+        type_
+    }
+
+    pub fn visit_variable_declaration(&mut self, var_decl: ast::VariableDeclarationStatementNode) {
+        let scope = self.program_state.get_mut_scope();
+        let identifier = match &var_decl.identifier.token.token {
+            tokens::Token::Identifier(ident) => ident.clone(),
+            _ => {
+                panic!("Expected identifier token");
+            }
+        };
+        let type_ = match var_decl.type_.token.token.to_name().as_str() {
+            "Word_NUMBER" => VariableTypes::Number,
+            "Word_NUMBAR" => VariableTypes::Numbar,
+            "Word_YARN" => VariableTypes::Yarn,
+            "Word_TROOF" => VariableTypes::Troof,
+            _ => {
+                panic!("Unexpected type");
+            }
+        };
+
+        if scope.variable_map.contains_key(&identifier) {
+            self.errors.push(VisitorError {
+                message: format!("Variable {} already declared", identifier),
+                token: var_decl.identifier.clone(),
+            });
+            return;
+        }
+
+        scope.variables += 1;
+        scope.variable_map.insert(identifier.clone(), type_);
+        scope
+            .variable_addresses
+            .insert(identifier.clone(), -(scope.variables - scope.arguments));
+        self.add_statements(vec![ir::IRStatement::Push(0.0)]);
+    }
+
+    pub fn visit_variable_assignment(&mut self, var_assign: ast::VariableAssignmentStatementNode) {
+        if let ast::VariableAssignmentNodeVariableOption::Identifier(ident) = var_assign.variable {
+            let mut scope = self.program_state.get_scope();
+            let identifier = match &ident.token.token {
+                tokens::Token::Identifier(identi) => identi.clone(),
+                _ => {
+                    panic!("Expected identifier token");
+                }
+            };
+
+            let sub_scope = scope.get_variable_mut(identifier.clone());
+            if let None = sub_scope {
+                self.errors.push(VisitorError {
+                    message: format!("Variable {} not declared", identifier),
+                    token: ident.clone(),
+                });
+                return;
+            }
+
+            let sub_scope = sub_scope.unwrap();
+            let type_ = sub_scope.variable_map.get(&identifier).unwrap().clone();
+
+            let (expr_type, token) = self.visit_expression(var_assign.expression.clone(), false);
+            if type_ != expr_type {
+                self.errors.push(VisitorError {
+                    message: format!(
+                        "Variable {} is of type {}, but expression is of type {}",
+                        identifier,
+                        type_.to_string(),
+                        expr_type.to_string()
+                    ),
+                    token,
+                });
+                return;
+            }
+
+            let address = sub_scope
+                .variable_addresses
+                .get(&identifier)
+                .unwrap()
+                .clone();
+            self.add_statements(vec![
+                ir::IRStatement::Push(address as f32),
+                ir::IRStatement::Mov,
+            ]);
+        } else {
+            let var_dec = match var_assign.variable {
+                ast::VariableAssignmentNodeVariableOption::VariableDeclerationStatement(va_dec) => {
+                    va_dec
+                }
+                _ => {
+                    panic!("Expected function definition");
+                }
+            };
+            self.visit_variable_declaration(var_dec.clone());
+            let scope = self.program_state.get_scope();
+
+            let identifier = match &var_dec.identifier.token.token {
+                tokens::Token::Identifier(ident) => ident.clone(),
+                _ => {
+                    panic!("Expected identifier token");
+                }
+            };
+
+            let type_ = match var_dec.type_.token.token.to_name().as_str() {
+                "Word_NUMBER" => VariableTypes::Number,
+                "Word_NUMBAR" => VariableTypes::Numbar,
+                "Word_YARN" => VariableTypes::Yarn,
+                "Word_TROOF" => VariableTypes::Troof,
+                _ => {
+                    panic!("Unexpected type");
+                }
+            };
+
+            let (expr_type, token) = self.visit_expression(var_assign.expression.clone(), false);
+            if type_ != expr_type {
+                self.errors.push(VisitorError {
+                    message: format!(
+                        "Variable {} is of type {}, but expression is of type {}",
+                        identifier,
+                        type_.to_string(),
+                        expr_type.to_string()
+                    ),
+                    token,
+                });
+                return;
+            }
+
+            let address = scope.variable_addresses.get(&identifier).unwrap().clone();
+            self.add_statements(vec![
+                ir::IRStatement::Push(address as f32),
+                ir::IRStatement::Mov,
+            ]);
+        }
     }
 }
