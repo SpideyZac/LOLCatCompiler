@@ -321,6 +321,26 @@ impl<'a> Visitor<'a> {
                 let type_ = self.visit_variable_reference(variable_ref.clone());
                 (type_, variable_ref.identifier.clone())
             }
+            ast::ExpressionNodeValueOption::SumExpression(sum_expr) => {
+                let (type_, token) = self.visit_sum_expression(sum_expr.clone());
+                (type_, token)
+            }
+            ast::ExpressionNodeValueOption::DiffExpression(diff_expr) => {
+                let (type_, token) = self.visit_difference_expression(diff_expr.clone());
+                (type_, token)
+            }
+            ast::ExpressionNodeValueOption::ProduktExpression(prod_expr) => {
+                let (type_, token) = self.visit_product_expression(prod_expr.clone());
+                (type_, token)
+            }
+            ast::ExpressionNodeValueOption::QuoshuntExpression(quoshunt_expr) => {
+                let (type_, token) = self.visit_quotient_expression(quoshunt_expr.clone());
+                (type_, token)
+            }
+            ast::ExpressionNodeValueOption::ModExpression(mod_expr) => {
+                let (type_, token) = self.visit_mod_expression(mod_expr.clone());
+                (type_, token)
+            }
             _ => {
                 panic!("Unexpected expression")
             }
@@ -400,6 +420,146 @@ impl<'a> Visitor<'a> {
         ]);
 
         type_
+    }
+
+    pub fn visit_sum_expression(
+        &mut self,
+        sum_expr: ast::SumExpressionNode,
+    ) -> (VariableTypes, ast::TokenNode) {
+        let (left_type, left_token) = self.visit_expression(*sum_expr.left.clone(), false);
+        if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
+            self.errors.push(VisitorError {
+                message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return (VariableTypes::Noob, left_token);
+        }
+        let (right_type, right_token) = self.visit_expression(*sum_expr.right.clone(), false);
+        if right_type != left_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableTypes::Noob, right_token);
+        }
+        self.add_statements(vec![ir::IRStatement::Add]);
+        (left_type, left_token)
+    }
+
+    pub fn visit_difference_expression(
+        &mut self,
+        diff_expr: ast::DiffExpressionNode,
+    ) -> (VariableTypes, ast::TokenNode) {
+        let (left_type, left_token) = self.visit_expression(*diff_expr.left.clone(), false);
+        if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
+            self.errors.push(VisitorError {
+                message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return (VariableTypes::Noob, left_token);
+        }
+        let (right_type, right_token) = self.visit_expression(*diff_expr.right.clone(), false);
+        if right_type != left_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableTypes::Noob, right_token);
+        }
+        self.add_statements(vec![ir::IRStatement::Subtract]);
+        (left_type, left_token)
+    }
+
+    pub fn visit_product_expression(
+        &mut self,
+        prod_expr: ast::ProduktExpressionNode,
+    ) -> (VariableTypes, ast::TokenNode) {
+        let (left_type, left_token) = self.visit_expression(*prod_expr.left.clone(), false);
+        if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
+            self.errors.push(VisitorError {
+                message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return (VariableTypes::Noob, left_token);
+        }
+        let (right_type, right_token) = self.visit_expression(*prod_expr.right.clone(), false);
+        if right_type != left_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableTypes::Noob, right_token);
+        }
+        self.add_statements(vec![ir::IRStatement::Multiply]);
+        (left_type, left_token)
+    }
+
+    pub fn visit_quotient_expression(
+        &mut self,
+        quoshunt_expr: ast::QuoshuntExpressionNode,
+    ) -> (VariableTypes, ast::TokenNode) {
+        let (left_type, left_token) = self.visit_expression(*quoshunt_expr.left.clone(), false);
+        if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
+            self.errors.push(VisitorError {
+                message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return (VariableTypes::Noob, left_token);
+        }
+        let (right_type, right_token) = self.visit_expression(*quoshunt_expr.right.clone(), false);
+        if right_type != left_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableTypes::Noob, right_token);
+        }
+        self.add_statements(vec![ir::IRStatement::Divide]);
+        (left_type, left_token)
+    }
+
+    pub fn visit_mod_expression(
+        &mut self,
+        mod_expr: ast::ModExpressionNode,
+    ) -> (VariableTypes, ast::TokenNode) {
+        let (left_type, left_token) = self.visit_expression(*mod_expr.left.clone(), false);
+        if left_type != VariableTypes::Number {
+            self.errors.push(VisitorError {
+                message: format!("Expected NUMBER, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return (VariableTypes::Noob, left_token);
+        }
+        let (right_type, right_token) = self.visit_expression(*mod_expr.right.clone(), false);
+        if right_type != left_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableTypes::Noob, right_token);
+        }
+        self.add_statements(vec![ir::IRStatement::Modulo]);
+        (left_type, left_token)
     }
 
     pub fn visit_variable_declaration(&mut self, var_decl: ast::VariableDeclarationStatementNode) {

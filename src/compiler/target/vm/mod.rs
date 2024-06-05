@@ -82,6 +82,10 @@ impl Target for VM {
         String::from("machine_divide(vm);\n")
     }
 
+    fn modulo(&self) -> String {
+        String::from("machine_modulo(vm);\n")
+    }
+
     fn sign(&self) -> String {
         String::from("machine_sign(vm);\n")
     }

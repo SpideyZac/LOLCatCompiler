@@ -177,8 +177,14 @@ impl<'a> Lexer<'a> {
             if self.curr_ch == ':' && !ignore {
                 ignore = true;
             } else {
+                if self.curr_ch == ')' && ignore {
+                    string_array.push('\n');
+                } else if self.curr_ch == '>' && ignore {
+                    string_array.push('\t');
+                } else {
+                    string_array.push(self.curr_ch);
+                }
                 ignore = false;
-                string_array.push(self.curr_ch);
             }
             self.read_ch();
         }

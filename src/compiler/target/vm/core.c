@@ -230,6 +230,12 @@ void machine_divide(machine *vm) {
     machine_push(vm, a/b);
 }
 
+void machine_modulo(machine *vm) {
+    float b = machine_pop(vm);
+    float a = machine_pop(vm);
+    machine_push(vm, (float)((int)a % (int)b));
+}
+
 void machine_sign(machine *vm) {
     float x = machine_pop(vm);
     if (x >= 0) {
