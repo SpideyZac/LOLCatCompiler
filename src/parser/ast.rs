@@ -62,11 +62,7 @@ pub enum ExpressionNodeValueOption {
     DiffrintExpression(DiffrintExpressionNode),
     SmooshExpression(SmooshExpressionNode),
     MaekExpression(MaekExpressionNode),
-    ItNumberReference(ItNumberReferenceNode),
-    ItNumbarReference(ItNumbarReferenceNode),
-    ItYarnReference(ItYarnReferenceNode),
-    ItTroofReference(ItTroofReferenceNode),
-    FunctionCallExpression(FunctionCallExpressionNode),
+    ItReference(ItReferenceNode),
 }
 
 #[derive(Debug, Clone)]
@@ -242,22 +238,7 @@ pub struct MaekExpressionNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct ItNumberReferenceNode {
-    pub token: TokenNode,
-}
-
-#[derive(Debug, Clone)]
-pub struct ItNumbarReferenceNode {
-    pub token: TokenNode,
-}
-
-#[derive(Debug, Clone)]
-pub struct ItYarnReferenceNode {
-    pub token: TokenNode,
-}
-
-#[derive(Debug, Clone)]
-pub struct ItTroofReferenceNode {
+pub struct ItReferenceNode {
     pub token: TokenNode,
 }
 

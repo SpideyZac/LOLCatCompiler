@@ -102,7 +102,6 @@ pub struct Visitor<'a> {
     ir: ir::IR,
     errors: Vec<VisitorError>,
     program_state: ProgramState,
-    first_it_yarn: bool,
 }
 
 impl<'a> Visitor<'a> {
@@ -140,58 +139,18 @@ impl<'a> Visitor<'a> {
                 },
                 function_states: HashMap::new(),
             },
-            first_it_yarn: true,
         };
 
         visitor
             .program_state
             .entry_function_state
             .variable_map
-            .insert("IT_NUMBER".to_string(), VariableTypes::Number);
+            .insert("IT".to_string(), VariableTypes::Noob);
         visitor
             .program_state
             .entry_function_state
             .variable_addresses
-            .insert("IT_NUMBER".to_string(), -1);
-        visitor.program_state.entry_function_state.variables += 1;
-        visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
-
-        visitor
-            .program_state
-            .entry_function_state
-            .variable_map
-            .insert("IT_NUMBAR".to_string(), VariableTypes::Number);
-        visitor
-            .program_state
-            .entry_function_state
-            .variable_addresses
-            .insert("IT_NUMBAR".to_string(), -2);
-        visitor.program_state.entry_function_state.variables += 1;
-        visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
-
-        visitor
-            .program_state
-            .entry_function_state
-            .variable_map
-            .insert("IT_YARN".to_string(), VariableTypes::Yarn);
-        visitor
-            .program_state
-            .entry_function_state
-            .variable_addresses
-            .insert("IT_YARN".to_string(), -3);
-        visitor.program_state.entry_function_state.variables += 1;
-        visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
-
-        visitor
-            .program_state
-            .entry_function_state
-            .variable_map
-            .insert("IT_TROOF".to_string(), VariableTypes::Troof);
-        visitor
-            .program_state
-            .entry_function_state
-            .variable_addresses
-            .insert("IT_TROOF".to_string(), -4);
+            .insert("IT".to_string(), -1);
         visitor.program_state.entry_function_state.variables += 1;
         visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
 
@@ -215,45 +174,86 @@ impl<'a> Visitor<'a> {
     pub fn visit_statement(&mut self, statement: ast::StatementNode) {
         match statement.value {
             ast::StatementNodeValueOption::Expression(expr) => {
-                let (type_, _) = self
-                    .visit_expression(expr.clone(), if self.first_it_yarn { false } else { true });
+                let (type_, _) = self.visit_expression(expr.clone());
                 // save to IT with type_
                 if type_ != VariableTypes::Noob {
                     let scope = self.program_state.get_scope();
+
+                    if *scope.variable_map.get("IT").unwrap() == VariableTypes::Yarn {
+                        self.add_statements(vec![
+                            ir::IRStatement::Push(
+                                *scope.variable_addresses.get("IT").unwrap() as f32,
+                            ),
+                            ir::IRStatement::Copy,
+                            ir::IRStatement::Load(1), // get the size
+                            ir::IRStatement::Push(1.0),
+                            ir::IRStatement::Add,
+                            ir::IRStatement::Push(4.0),
+                            ir::IRStatement::Multiply,
+                            ir::IRStatement::Push(
+                                *scope.variable_addresses.get("IT").unwrap() as f32,
+                            ),
+                            ir::IRStatement::Copy,
+                            ir::IRStatement::Free,
+                        ]);
+                    }
 
                     match type_ {
                         VariableTypes::Number => {
                             self.add_statements(vec![
                                 ir::IRStatement::Push(
-                                    *scope.variable_addresses.get("IT_NUMBER").unwrap() as f32,
+                                    *scope.variable_addresses.get("IT").unwrap() as f32
                                 ),
                                 ir::IRStatement::Mov,
                             ]);
+                            let mut_scope = self.program_state.get_mut_scope();
+                            mut_scope
+                                .variable_map
+                                .get_mut("IT")
+                                .unwrap()
+                                .clone_from(&VariableTypes::Number);
                         }
                         VariableTypes::Numbar => {
                             self.add_statements(vec![
                                 ir::IRStatement::Push(
-                                    *scope.variable_addresses.get("IT_NUMBAR").unwrap() as f32,
+                                    *scope.variable_addresses.get("IT").unwrap() as f32
                                 ),
                                 ir::IRStatement::Mov,
                             ]);
+                            let mut_scope = self.program_state.get_mut_scope();
+                            mut_scope
+                                .variable_map
+                                .get_mut("IT")
+                                .unwrap()
+                                .clone_from(&VariableTypes::Numbar);
                         }
                         VariableTypes::Yarn => {
-                            self.first_it_yarn = false;
                             self.add_statements(vec![
                                 ir::IRStatement::Push(
-                                    *scope.variable_addresses.get("IT_YARN").unwrap() as f32,
+                                    *scope.variable_addresses.get("IT").unwrap() as f32
                                 ),
                                 ir::IRStatement::Mov,
                             ]);
+                            let mut_scope = self.program_state.get_mut_scope();
+                            mut_scope
+                                .variable_map
+                                .get_mut("IT")
+                                .unwrap()
+                                .clone_from(&VariableTypes::Yarn);
                         }
                         VariableTypes::Troof => {
                             self.add_statements(vec![
                                 ir::IRStatement::Push(
-                                    *scope.variable_addresses.get("IT_TROOF").unwrap() as f32,
+                                    *scope.variable_addresses.get("IT").unwrap() as f32
                                 ),
                                 ir::IRStatement::Mov,
                             ]);
+                            let mut_scope = self.program_state.get_mut_scope();
+                            mut_scope
+                                .variable_map
+                                .get_mut("IT")
+                                .unwrap()
+                                .clone_from(&VariableTypes::Troof);
                         }
                         _ => {
                             panic!("Unexpected type")
@@ -279,7 +279,6 @@ impl<'a> Visitor<'a> {
     pub fn visit_expression(
         &mut self,
         expression: ast::ExpressionNode,
-        string_free: bool,
     ) -> (VariableTypes, ast::TokenNode) {
         match expression.value {
             ast::ExpressionNodeValueOption::NumberValue(number_value) => {
@@ -291,25 +290,6 @@ impl<'a> Visitor<'a> {
                 (VariableTypes::Numbar, numbar_value.token.clone())
             }
             ast::ExpressionNodeValueOption::YarnValue(yarn_value) => {
-                if string_free {
-                    let scope = self.program_state.get_scope();
-                    self.add_statements(vec![
-                        ir::IRStatement::Push(
-                            *scope.variable_addresses.get("IT_YARN").unwrap() as f32
-                        ),
-                        ir::IRStatement::Copy,
-                        ir::IRStatement::Load(1), // get the size
-                        ir::IRStatement::Push(1.0),
-                        ir::IRStatement::Add,
-                        ir::IRStatement::Push(4.0),
-                        ir::IRStatement::Multiply,
-                        ir::IRStatement::Push(
-                            *scope.variable_addresses.get("IT_YARN").unwrap() as f32
-                        ),
-                        ir::IRStatement::Copy,
-                        ir::IRStatement::Free,
-                    ]);
-                }
                 self.visit_yarn_value(yarn_value.clone());
                 (VariableTypes::Yarn, yarn_value.token.clone())
             }
@@ -426,7 +406,7 @@ impl<'a> Visitor<'a> {
         &mut self,
         sum_expr: ast::SumExpressionNode,
     ) -> (VariableTypes, ast::TokenNode) {
-        let (left_type, left_token) = self.visit_expression(*sum_expr.left.clone(), false);
+        let (left_type, left_token) = self.visit_expression(*sum_expr.left.clone());
         if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
             self.errors.push(VisitorError {
                 message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
@@ -434,7 +414,7 @@ impl<'a> Visitor<'a> {
             });
             return (VariableTypes::Noob, left_token);
         }
-        let (right_type, right_token) = self.visit_expression(*sum_expr.right.clone(), false);
+        let (right_type, right_token) = self.visit_expression(*sum_expr.right.clone());
         if right_type != left_type {
             self.errors.push(VisitorError {
                 message: format!(
@@ -454,7 +434,7 @@ impl<'a> Visitor<'a> {
         &mut self,
         diff_expr: ast::DiffExpressionNode,
     ) -> (VariableTypes, ast::TokenNode) {
-        let (left_type, left_token) = self.visit_expression(*diff_expr.left.clone(), false);
+        let (left_type, left_token) = self.visit_expression(*diff_expr.left.clone());
         if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
             self.errors.push(VisitorError {
                 message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
@@ -462,7 +442,7 @@ impl<'a> Visitor<'a> {
             });
             return (VariableTypes::Noob, left_token);
         }
-        let (right_type, right_token) = self.visit_expression(*diff_expr.right.clone(), false);
+        let (right_type, right_token) = self.visit_expression(*diff_expr.right.clone());
         if right_type != left_type {
             self.errors.push(VisitorError {
                 message: format!(
@@ -482,7 +462,7 @@ impl<'a> Visitor<'a> {
         &mut self,
         prod_expr: ast::ProduktExpressionNode,
     ) -> (VariableTypes, ast::TokenNode) {
-        let (left_type, left_token) = self.visit_expression(*prod_expr.left.clone(), false);
+        let (left_type, left_token) = self.visit_expression(*prod_expr.left.clone());
         if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
             self.errors.push(VisitorError {
                 message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
@@ -490,7 +470,7 @@ impl<'a> Visitor<'a> {
             });
             return (VariableTypes::Noob, left_token);
         }
-        let (right_type, right_token) = self.visit_expression(*prod_expr.right.clone(), false);
+        let (right_type, right_token) = self.visit_expression(*prod_expr.right.clone());
         if right_type != left_type {
             self.errors.push(VisitorError {
                 message: format!(
@@ -510,7 +490,7 @@ impl<'a> Visitor<'a> {
         &mut self,
         quoshunt_expr: ast::QuoshuntExpressionNode,
     ) -> (VariableTypes, ast::TokenNode) {
-        let (left_type, left_token) = self.visit_expression(*quoshunt_expr.left.clone(), false);
+        let (left_type, left_token) = self.visit_expression(*quoshunt_expr.left.clone());
         if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
             self.errors.push(VisitorError {
                 message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
@@ -518,7 +498,7 @@ impl<'a> Visitor<'a> {
             });
             return (VariableTypes::Noob, left_token);
         }
-        let (right_type, right_token) = self.visit_expression(*quoshunt_expr.right.clone(), false);
+        let (right_type, right_token) = self.visit_expression(*quoshunt_expr.right.clone());
         if right_type != left_type {
             self.errors.push(VisitorError {
                 message: format!(
@@ -538,7 +518,7 @@ impl<'a> Visitor<'a> {
         &mut self,
         mod_expr: ast::ModExpressionNode,
     ) -> (VariableTypes, ast::TokenNode) {
-        let (left_type, left_token) = self.visit_expression(*mod_expr.left.clone(), false);
+        let (left_type, left_token) = self.visit_expression(*mod_expr.left.clone());
         if left_type != VariableTypes::Number {
             self.errors.push(VisitorError {
                 message: format!("Expected NUMBER, got {}", left_type.to_string()),
@@ -546,7 +526,7 @@ impl<'a> Visitor<'a> {
             });
             return (VariableTypes::Noob, left_token);
         }
-        let (right_type, right_token) = self.visit_expression(*mod_expr.right.clone(), false);
+        let (right_type, right_token) = self.visit_expression(*mod_expr.right.clone());
         if right_type != left_type {
             self.errors.push(VisitorError {
                 message: format!(
@@ -618,7 +598,7 @@ impl<'a> Visitor<'a> {
             let sub_scope = sub_scope.unwrap();
             let type_ = sub_scope.variable_map.get(&identifier).unwrap().clone();
 
-            let (expr_type, token) = self.visit_expression(var_assign.expression.clone(), false);
+            let (expr_type, token) = self.visit_expression(var_assign.expression.clone());
             if type_ != expr_type {
                 self.errors.push(VisitorError {
                     message: format!(
@@ -670,7 +650,7 @@ impl<'a> Visitor<'a> {
                 }
             };
 
-            let (expr_type, token) = self.visit_expression(var_assign.expression.clone(), false);
+            let (expr_type, token) = self.visit_expression(var_assign.expression.clone());
             if type_ != expr_type {
                 self.errors.push(VisitorError {
                     message: format!(
