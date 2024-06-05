@@ -30,7 +30,7 @@ In fact, we have only added 6 instructions (and changed some) for compatability 
 | `subtract();` | Pop two numbers off of the stack. Subtract the first from the second, and push the result. |
 | `multiply();` | Pop two numbers off of the stack, and push their product. |
 | `divide();` | Pop two numbers off of the stack. Divide the second by the first, and push the result. |
-| `modulo();` | Pop two numbers off of the stack. Take the module of the first by the second, aandd push the result. |
+| `modulo();` | Pop two numbers off of the stack. Take the module of the first by the second, and push the result. |
 | `sign();` | Pop a number off of the stack. If it is greater or equal to zero, push `1`, otherwise push `-1`. |
 | `allocate();` | Pop a number off of the stack, and return a pointer to that number of free bytes on the heap. |
 | `free();` | Pop a number off of the stack, and go to where this number points in the heap. Pop another number off of the stack, and free that many cells at this location in the heap. |
