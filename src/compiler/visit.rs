@@ -208,6 +208,7 @@ impl<'a> Visitor<'a> {
             .insert("IT".to_string(), -1);
         visitor.program_state.entry_function_state.variables += 1;
         visitor.add_statements(vec![ir::IRStatement::Push(0.0)]);
+        visitor.extras -= 1;
 
         visitor
     }
@@ -376,6 +377,10 @@ impl<'a> Visitor<'a> {
             ast::ExpressionNodeValueOption::ModExpression(mod_expr) => {
                 let (type_, token) = self.visit_mod_expression(mod_expr.clone());
                 (type_, token)
+            }
+            ast::ExpressionNodeValueOption::BothOfExpression(both_of_expr) => {
+                let token = self.visit_both_of_expression(both_of_expr.clone());
+                (VariableTypes::Troof, token)
             }
             _ => {
                 panic!("Unexpected expression")
@@ -599,6 +604,46 @@ impl<'a> Visitor<'a> {
         (left_type, left_token)
     }
 
+    pub fn visit_both_of_expression(
+        &mut self,
+        both_of_expr: ast::BothOfExpressionNode,
+    ) -> ast::TokenNode {
+        self.add_statements(vec![
+            ir::IRStatement::Push(0.0), // return value
+        ]);
+        let extras = self.extras;
+        let (left_type, left_token) = self.visit_expression(*both_of_expr.left.clone());
+        if left_type != VariableTypes::Troof {
+            self.errors.push(VisitorError {
+                message: format!("Expected TROOF, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return left_token;
+        }
+        let (right_type, right_token) = self.visit_expression(*both_of_expr.right.clone());
+        if right_type != VariableTypes::Troof {
+            self.errors.push(VisitorError {
+                message: format!("Expected TROOF, got {}", right_type.to_string()),
+                token: right_token.clone(),
+            });
+            return right_token;
+        }
+        let scope = self.program_state.get_scope();
+        self.add_statements(vec![
+            ir::IRStatement::Multiply, // 0 * 0 = 0; 0 * 1 = 0; 1 * 0 = 0; 1 * 1 = 1 (AND)
+            ir::IRStatement::BeginWhile, // only runs if not 0
+            ir::IRStatement::Push(1.0), // set return value to true
+            ir::IRStatement::Push(
+                -(scope.variables as f32 - scope.arguments as f32 + extras as f32),
+            ), // location of return value
+            ir::IRStatement::Mov,
+            ir::IRStatement::Push(0.0), // break out of loop
+            ir::IRStatement::EndWhile,
+        ]);
+
+        left_token
+    }
+
     pub fn visit_variable_declaration(&mut self, var_decl: ast::VariableDeclarationStatementNode) {
         let scope = self.program_state.get_mut_scope();
         let identifier = match &var_decl.identifier.token.token {
@@ -631,6 +676,7 @@ impl<'a> Visitor<'a> {
             .variable_addresses
             .insert(identifier.clone(), -(scope.variables - scope.arguments));
         self.add_statements(vec![ir::IRStatement::Push(0.0)]);
+        self.extras -= 1;
     }
 
     pub fn visit_variable_assignment(&mut self, var_assign: ast::VariableAssignmentStatementNode) {
