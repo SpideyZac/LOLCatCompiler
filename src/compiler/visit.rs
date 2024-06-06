@@ -103,61 +103,70 @@ pub struct Visitor<'a> {
     errors: Vec<VisitorError>,
     program_state: ProgramState,
     extras: i32, // how many extra values are on the stack (after the last local variable) - is reset after each statement as all excess values should be popped
+    in_while: i32, // for statement counting
 }
 
 impl<'a> Visitor<'a> {
     pub fn add_statements(&mut self, statements: Vec<ir::IRStatement>) {
         for statement in statements.iter() {
-            match statement {
-                &ir::IRStatement::Push(_) => {
-                    self.extras += 1;
+            if self.in_while == 0 {
+                // counting extras in a loop doesnt work at compile time
+                match statement {
+                    &ir::IRStatement::Push(_) => {
+                        self.extras += 1;
+                    }
+                    &ir::IRStatement::Add => {
+                        self.extras -= 1;
+                    }
+                    &ir::IRStatement::Subtract => {
+                        self.extras -= 1;
+                    }
+                    &ir::IRStatement::Multiply => {
+                        self.extras -= 1;
+                    }
+                    &ir::IRStatement::Divide => {
+                        self.extras -= 1;
+                    }
+                    &ir::IRStatement::Modulo => {
+                        self.extras -= 1;
+                    }
+                    &ir::IRStatement::Sign => {}
+                    &ir::IRStatement::Allocate => {}
+                    &ir::IRStatement::Free => {
+                        self.extras -= 2;
+                    }
+                    &ir::IRStatement::Store(size) => {
+                        self.extras -= size + 1;
+                    }
+                    &ir::IRStatement::Load(size) => {
+                        self.extras += size + 1;
+                    }
+                    &ir::IRStatement::Copy => {}
+                    &ir::IRStatement::Mov => {
+                        self.extras -= 2;
+                    }
+                    &ir::IRStatement::Call(_) => {}
+                    &ir::IRStatement::CallForeign(_) => {}
+                    &ir::IRStatement::BeginWhile => {
+                        self.extras -= 1; // guarantee that we at least remove 1 value
+                        self.in_while += 1;
+                    }
+                    &ir::IRStatement::EndWhile => {
+                        self.in_while -= 1;
+                    }
+                    &ir::IRStatement::LoadBasePtr => {
+                        self.extras += 1;
+                    }
+                    &ir::IRStatement::EstablishStackFrame => {}
+                    &ir::IRStatement::EndStackFrame(_, _) => {}
+                    &ir::IRStatement::SetReturnRegister => {
+                        self.extras -= 1;
+                    }
+                    &ir::IRStatement::AccessReturnRegister => {
+                        self.extras += 1;
+                    }
+                    &ir::IRStatement::Halt => {}
                 }
-                &ir::IRStatement::Add => {
-                    self.extras -= 1;
-                }
-                &ir::IRStatement::Subtract => {
-                    self.extras -= 1;
-                }
-                &ir::IRStatement::Multiply => {
-                    self.extras -= 1;
-                }
-                &ir::IRStatement::Divide => {
-                    self.extras -= 1;
-                }
-                &ir::IRStatement::Modulo => {
-                    self.extras -= 1;
-                }
-                &ir::IRStatement::Sign => {}
-                &ir::IRStatement::Allocate => {}
-                &ir::IRStatement::Free => {
-                    self.extras -= 2;
-                }
-                &ir::IRStatement::Store(size) => {
-                    self.extras -= size + 1;
-                }
-                &ir::IRStatement::Load(size) => {
-                    self.extras += size + 1;
-                }
-                &ir::IRStatement::Copy => {}
-                &ir::IRStatement::Mov => {
-                    self.extras -= 2;
-                }
-                &ir::IRStatement::Call(_) => {}
-                &ir::IRStatement::CallForeign(_) => {}
-                &ir::IRStatement::BeginWhile => {}
-                &ir::IRStatement::EndWhile => {}
-                &ir::IRStatement::LoadBasePtr => {
-                    self.extras += 1;
-                }
-                &ir::IRStatement::EstablishStackFrame => {}
-                &ir::IRStatement::EndStackFrame(_, _) => {}
-                &ir::IRStatement::SetReturnRegister => {
-                    self.extras -= 1;
-                }
-                &ir::IRStatement::AccessReturnRegister => {
-                    self.extras += 1;
-                }
-                &ir::IRStatement::Halt => {}
             }
         }
         if self.program_state.is_inside_entry {
@@ -194,6 +203,7 @@ impl<'a> Visitor<'a> {
                 function_states: HashMap::new(),
             },
             extras: 0,
+            in_while: 0,
         };
 
         visitor
@@ -380,6 +390,26 @@ impl<'a> Visitor<'a> {
             }
             ast::ExpressionNodeValueOption::BothOfExpression(both_of_expr) => {
                 let token = self.visit_both_of_expression(both_of_expr.clone());
+                (VariableTypes::Troof, token)
+            }
+            ast::ExpressionNodeValueOption::EitherOfExpression(either_of_expr) => {
+                let token = self.visit_either_of_expression(either_of_expr.clone());
+                (VariableTypes::Troof, token)
+            }
+            ast::ExpressionNodeValueOption::WonOfExpression(won_of_expr) => {
+                let token = self.visit_won_of_expression(won_of_expr.clone());
+                (VariableTypes::Troof, token)
+            }
+            ast::ExpressionNodeValueOption::NotExpression(not_expr) => {
+                let token = self.visit_not_expression(not_expr.clone());
+                (VariableTypes::Troof, token)
+            }
+            ast::ExpressionNodeValueOption::AllOfExpression(all_of_expr) => {
+                let token = self.visit_all_of_expression(all_of_expr.clone());
+                (VariableTypes::Troof, token)
+            }
+            ast::ExpressionNodeValueOption::AnyOfExpression(any_of_expr) => {
+                let token = self.visit_any_of_expression(any_of_expr.clone());
                 (VariableTypes::Troof, token)
             }
             _ => {
@@ -642,6 +672,190 @@ impl<'a> Visitor<'a> {
         ]);
 
         left_token
+    }
+
+    pub fn visit_either_of_expression(
+        &mut self,
+        either_of_expr: ast::EitherOfExpressionNode,
+    ) -> ast::TokenNode {
+        let (left_type, left_token) = self.visit_expression(*either_of_expr.left.clone());
+        if left_type != VariableTypes::Troof {
+            self.errors.push(VisitorError {
+                message: format!("Expected TROOF, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return left_token;
+        }
+        let (right_type, right_token) = self.visit_expression(*either_of_expr.right.clone());
+        if right_type != VariableTypes::Troof {
+            self.errors.push(VisitorError {
+                message: format!("Expected TROOF, got {}", right_type.to_string()),
+                token: right_token.clone(),
+            });
+            return right_token;
+        }
+
+        self.add_statements(vec![
+            ir::IRStatement::Add, // 0 + 0 = 0; 0 + 1 = 1; 1 + 0 = 1; 1 + 1 = 1 (OR)
+        ]);
+
+        left_token
+    }
+
+    pub fn visit_won_of_expression(
+        &mut self,
+        won_of_expr: ast::WonOfExpressionNode,
+    ) -> ast::TokenNode {
+        self.add_statements(vec![
+            ir::IRStatement::Push(0.0), // return value
+        ]);
+        let extras = self.extras;
+        let (left_type, left_token) = self.visit_expression(*won_of_expr.left.clone());
+        if left_type != VariableTypes::Troof {
+            self.errors.push(VisitorError {
+                message: format!("Expected TROOF, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return left_token;
+        }
+        let (right_type, right_token) = self.visit_expression(*won_of_expr.right.clone());
+        if right_type != VariableTypes::Troof {
+            self.errors.push(VisitorError {
+                message: format!("Expected TROOF, got {}", right_type.to_string()),
+                token: right_token.clone(),
+            });
+            return right_token;
+        }
+        let scope = self.program_state.get_scope();
+        // xor
+        self.add_statements(vec![
+            ir::IRStatement::Add, // 0 + 0 = 0; 0 + 1 = 1; 1 + 0 = 1; 1 + 1 = 1 (OR)
+            ir::IRStatement::Push(2.0),
+            ir::IRStatement::Modulo,     // 0 % 2 = 0; 1 % 2 = 1 (XOR)
+            ir::IRStatement::BeginWhile, // only runs if not 0
+            ir::IRStatement::Push(1.0),  // set return value to true
+            ir::IRStatement::Push(
+                -(scope.variables as f32 - scope.arguments as f32 + extras as f32),
+            ), // location of return value
+            ir::IRStatement::Mov,
+            ir::IRStatement::Push(0.0), // break out of loop
+            ir::IRStatement::EndWhile,
+        ]);
+
+        left_token
+    }
+
+    pub fn visit_not_expression(&mut self, not_expr: ast::NotExpressionNode) -> ast::TokenNode {
+        let (expr_type, token) = self.visit_expression(*not_expr.expression.clone());
+        if expr_type != VariableTypes::Troof {
+            self.errors.push(VisitorError {
+                message: format!("Expected TROOF, got {}", expr_type.to_string()),
+                token: token.clone(),
+            });
+            return token;
+        }
+        self.add_statements(vec![
+            ir::IRStatement::Push(1.0),
+            ir::IRStatement::Add, // 0 + 1 = 1; 1 + 1 = 2
+            ir::IRStatement::Push(2.0),
+            ir::IRStatement::Modulo, // 1 % 2 = 1; 2 % 2 = 0 (NOT)
+        ]);
+        token
+    }
+
+    pub fn visit_all_of_expression(
+        &mut self,
+        all_of_expr: ast::AllOfExpressionNode,
+    ) -> ast::TokenNode {
+        self.add_statements(vec![
+            ir::IRStatement::Push(1.0), // return value
+        ]);
+        let extra = self.extras;
+        let mut t = None;
+
+        self.add_statements(vec![
+            ir::IRStatement::Push(1.0), // runing total
+        ]);
+        for expression in all_of_expr.expressions.iter() {
+            let (expr_type, token) = self.visit_expression(expression.clone());
+            if expr_type != VariableTypes::Troof {
+                self.errors.push(VisitorError {
+                    message: format!("Expected TROOF, got {}", expr_type.to_string()),
+                    token: token.clone(),
+                });
+                return token;
+            }
+            t = Some(token);
+
+            self.add_statements(vec![
+                ir::IRStatement::Multiply, // AND OPERATION
+            ]);
+            let extra2 = self.extras;
+            let scope = self.program_state.get_scope();
+            self.add_statements(vec![
+                ir::IRStatement::Push(
+                    -(scope.variables as f32 - scope.arguments as f32 + extra2 as f32),
+                ), // location of running total
+                ir::IRStatement::Copy,
+                ir::IRStatement::Push(1.0),
+                ir::IRStatement::Add,
+                ir::IRStatement::Push(2.0),
+                ir::IRStatement::Modulo,
+                ir::IRStatement::BeginWhile,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::Push(
+                    -(scope.variables as f32 - scope.arguments as f32 + extra as f32),
+                ), // location of return value
+                ir::IRStatement::Mov,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::EndWhile,
+            ]);
+        }
+
+        self.add_statements(vec![
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+        ]);
+
+        t.unwrap()
+    }
+
+    pub fn visit_any_of_expression(
+        &mut self,
+        any_of_expr: ast::AnyOfExpressionNode,
+    ) -> ast::TokenNode {
+        self.add_statements(vec![
+            ir::IRStatement::Push(0.0), // return value
+        ]);
+        let extra = self.extras;
+        let mut t = None;
+
+        for expression in any_of_expr.expressions.iter() {
+            let (expr_type, token) = self.visit_expression(expression.clone());
+            if expr_type != VariableTypes::Troof {
+                self.errors.push(VisitorError {
+                    message: format!("Expected TROOF, got {}", expr_type.to_string()),
+                    token: token.clone(),
+                });
+                return token;
+            }
+            t = Some(token);
+
+            let scope = self.program_state.get_scope();
+            self.add_statements(vec![
+                ir::IRStatement::BeginWhile,
+                ir::IRStatement::Push(1.0),
+                ir::IRStatement::Push(
+                    -(scope.variables as f32 - scope.arguments as f32 + extra as f32),
+                ), // location of return value
+                ir::IRStatement::Mov,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::EndWhile,
+            ]);
+        }
+
+        t.unwrap()
     }
 
     pub fn visit_variable_declaration(&mut self, var_decl: ast::VariableDeclarationStatementNode) {
