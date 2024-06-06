@@ -204,10 +204,10 @@ void machine_mov(machine *vm) {
 
     vm->stack[vm->base_ptr - offset] = value;
     // print stack
-    for (int i = 0; i < vm->stack_pointer; i++) {
-        printf("%f\n", vm->stack[i]);
-    }
-    printf("\n");
+    // for (int i = 0; i < vm->stack_pointer; i++) {
+    //     printf("%f\n", vm->stack[i]);
+    // }
+    // printf("\n");
 }
 
 void machine_add(machine *vm) {
