@@ -130,7 +130,9 @@ impl<'a> Visitor<'a> {
                     &ir::IRStatement::Modulo => {
                         self.extras -= 1;
                     }
-                    &ir::IRStatement::Sign => {}
+                    &ir::IRStatement::Sign => {
+                        self.extras -= 1;
+                    }
                     &ir::IRStatement::Allocate => {}
                     &ir::IRStatement::Free => {
                         self.extras -= 2;
@@ -388,6 +390,14 @@ impl<'a> Visitor<'a> {
                 let (type_, token) = self.visit_mod_expression(mod_expr.clone());
                 (type_, token)
             }
+            ast::ExpressionNodeValueOption::BiggrExpression(biggr_expr) => {
+                let (type_, token) = self.visit_biggr_expression(biggr_expr.clone());
+                (type_, token)
+            }
+            ast::ExpressionNodeValueOption::SmallrExpression(smallr_expr) => {
+                let (type_, token) = self.visit_smallr_expression(smallr_expr.clone());
+                (type_, token)
+            }
             ast::ExpressionNodeValueOption::BothOfExpression(both_of_expr) => {
                 let token = self.visit_both_of_expression(both_of_expr.clone());
                 (VariableTypes::Troof, token)
@@ -411,6 +421,10 @@ impl<'a> Visitor<'a> {
             ast::ExpressionNodeValueOption::AnyOfExpression(any_of_expr) => {
                 let token = self.visit_any_of_expression(any_of_expr.clone());
                 (VariableTypes::Troof, token)
+            }
+            ast::ExpressionNodeValueOption::ItReference(it_ref_expr) => {
+                let type_ = self.visit_it_reference(it_ref_expr.clone());
+                (type_, it_ref_expr.token.clone())
             }
             _ => {
                 panic!("Unexpected expression")
@@ -631,6 +645,176 @@ impl<'a> Visitor<'a> {
             return (VariableTypes::Noob, right_token);
         }
         self.add_statements(vec![ir::IRStatement::Modulo]);
+        (left_type, left_token)
+    }
+
+    pub fn visit_biggr_expression(
+        &mut self,
+        biggr_expr: ast::BiggrExpressionNode,
+    ) -> (VariableTypes, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(0.0)]); // return value
+        let extras2 = self.extras;
+        let (left_type, left_token) = self.visit_expression(*biggr_expr.left.clone());
+        if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
+            self.errors.push(VisitorError {
+                message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return (VariableTypes::Noob, left_token);
+        }
+        let (right_type, right_token) = self.visit_expression(*biggr_expr.right.clone());
+        if right_type != left_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableTypes::Noob, right_token);
+        }
+        let extras = self.extras;
+        self.add_statements(vec![
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32
+                    - 1.0),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Subtract,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32
+                    + 1.0),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Sign,
+            ir::IRStatement::Multiply,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32
+                    - 1.0),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Add,
+            ir::IRStatement::Add, // x + y + abs(x - y)
+            ir::IRStatement::Push(2.0),
+            ir::IRStatement::Divide,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras2 as f32),
+            ),
+            ir::IRStatement::Mov,
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+        ]);
+        (left_type, left_token)
+    }
+
+    pub fn visit_smallr_expression(
+        &mut self,
+        smallr_expr: ast::SmallrExpressionNode,
+    ) -> (VariableTypes, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(0.0)]); // return value
+        let extras2 = self.extras;
+        let (left_type, left_token) = self.visit_expression(*smallr_expr.left.clone());
+        if left_type != VariableTypes::Number && left_type != VariableTypes::Numbar {
+            self.errors.push(VisitorError {
+                message: format!("Expected NUMBER or NUMBAR, got {}", left_type.to_string()),
+                token: left_token.clone(),
+            });
+            return (VariableTypes::Noob, left_token);
+        }
+        let (right_type, right_token) = self.visit_expression(*smallr_expr.right.clone());
+        if right_type != left_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableTypes::Noob, right_token);
+        }
+        let extras = self.extras;
+        self.add_statements(vec![
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32
+                    - 1.0),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Subtract,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32
+                    + 1.0),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Sign,
+            ir::IRStatement::Multiply,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32
+                    - 1.0),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras as f32),
+            ),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Add,
+            ir::IRStatement::Subtract, // x + y + abs(x - y)
+            ir::IRStatement::Push(2.0),
+            ir::IRStatement::Divide,
+            ir::IRStatement::Push(-1.0),
+            ir::IRStatement::Multiply,
+            ir::IRStatement::Push(
+                -(self.program_state.get_scope().variables as f32
+                    - self.program_state.get_scope().arguments as f32
+                    + extras2 as f32),
+            ),
+            ir::IRStatement::Mov,
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+        ]);
         (left_type, left_token)
     }
 
@@ -856,6 +1040,28 @@ impl<'a> Visitor<'a> {
         }
 
         t.unwrap()
+    }
+
+    pub fn visit_it_reference(&mut self, it_ref: ast::ItReferenceNode) -> VariableTypes {
+        let scope = self.program_state.get_scope();
+        let sub_scope = scope.get_variable("IT".to_string());
+        if let None = sub_scope {
+            self.errors.push(VisitorError {
+                message: "Variable IT not declared".to_string(),
+                token: it_ref.token.clone(),
+            });
+            return VariableTypes::Noob;
+        }
+
+        let sub_scope = sub_scope.unwrap();
+        let type_ = sub_scope.variable_map.get("IT").unwrap().clone();
+        let address = sub_scope.variable_addresses.get("IT").unwrap().clone();
+        self.add_statements(vec![
+            ir::IRStatement::Push(address as f32),
+            ir::IRStatement::Copy,
+        ]);
+
+        type_
     }
 
     pub fn visit_variable_declaration(&mut self, var_decl: ast::VariableDeclarationStatementNode) {
