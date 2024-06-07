@@ -9,7 +9,7 @@ use crate::parser::parser;
 pub enum VariableTypes {
     Number,
     Numbar,
-    Yarn,
+    Yarn(bool), // is it a temporary value
     Troof,
     Noob,
 }
@@ -19,7 +19,7 @@ impl VariableTypes {
         match self {
             VariableTypes::Number => "NUMBER".to_string(),
             VariableTypes::Numbar => "NUMBAR".to_string(),
-            VariableTypes::Yarn => "YARN".to_string(),
+            VariableTypes::Yarn(_) => "YARN".to_string(),
             VariableTypes::Troof => "TROOF".to_string(),
             VariableTypes::Noob => "NOOB".to_string(),
         }
@@ -247,7 +247,7 @@ impl<'a> Visitor<'a> {
                 if type_ != VariableTypes::Noob {
                     let scope = self.program_state.get_scope();
 
-                    if *scope.variable_map.get("IT").unwrap() == VariableTypes::Yarn {
+                    if *scope.variable_map.get("IT").unwrap().to_string() == *"YARN" {
                         self.add_statements(vec![
                             ir::IRStatement::Push(
                                 *scope.variable_addresses.get("IT").unwrap() as f32
@@ -295,7 +295,7 @@ impl<'a> Visitor<'a> {
                                 .unwrap()
                                 .clone_from(&VariableTypes::Numbar);
                         }
-                        VariableTypes::Yarn => {
+                        VariableTypes::Yarn(_) => {
                             self.add_statements(vec![
                                 ir::IRStatement::Push(
                                     *scope.variable_addresses.get("IT").unwrap() as f32
@@ -307,7 +307,7 @@ impl<'a> Visitor<'a> {
                                 .variable_map
                                 .get_mut("IT")
                                 .unwrap()
-                                .clone_from(&VariableTypes::Yarn);
+                                .clone_from(&VariableTypes::Yarn(false));
                         }
                         VariableTypes::Troof => {
                             self.add_statements(vec![
@@ -360,7 +360,7 @@ impl<'a> Visitor<'a> {
             }
             ast::ExpressionNodeValueOption::YarnValue(yarn_value) => {
                 self.visit_yarn_value(yarn_value.clone());
-                (VariableTypes::Yarn, yarn_value.token.clone())
+                (VariableTypes::Yarn(true), yarn_value.token.clone())
             }
             ast::ExpressionNodeValueOption::TroofValue(troof_value) => {
                 self.visit_troof_value(troof_value.clone());
@@ -420,6 +420,10 @@ impl<'a> Visitor<'a> {
             }
             ast::ExpressionNodeValueOption::AnyOfExpression(any_of_expr) => {
                 let token = self.visit_any_of_expression(any_of_expr.clone());
+                (VariableTypes::Troof, token)
+            }
+            ast::ExpressionNodeValueOption::BothSaemExpression(both_saem_expr) => {
+                let token = self.visit_both_saem_expression(both_saem_expr.clone());
                 (VariableTypes::Troof, token)
             }
             ast::ExpressionNodeValueOption::ItReference(it_ref_expr) => {
@@ -1042,6 +1046,53 @@ impl<'a> Visitor<'a> {
         t.unwrap()
     }
 
+    pub fn visit_both_saem_expression(
+        &mut self,
+        both_saem_expr: ast::BothSaemExpressionNode,
+    ) -> ast::TokenNode {
+        self.add_statements(vec![
+            ir::IRStatement::Push(1.0), // return value
+        ]);
+        let extras = self.extras;
+
+        let (left_type, left_token) = self.visit_expression(*both_saem_expr.left.clone());
+        let (right_type, right_token) = self.visit_expression(*both_saem_expr.right.clone());
+        if left_type != right_type {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} got {}",
+                    left_type.to_string(),
+                    right_type.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return right_token;
+        }
+
+        let scope = self.program_state.get_scope();
+
+        match left_type {
+            VariableTypes::Number => {
+                self.add_statements(vec![
+                    ir::IRStatement::Subtract,
+                    ir::IRStatement::BeginWhile,
+                    ir::IRStatement::Push(0.0),
+                    ir::IRStatement::Push(
+                        -(scope.variables as f32 - scope.arguments as f32 + extras as f32),
+                    ),
+                    ir::IRStatement::Mov,
+                    ir::IRStatement::Push(0.0),
+                    ir::IRStatement::EndWhile,
+                ]);
+            }
+            _ => {
+                panic!("Unexpected type")
+            }
+        }
+
+        left_token
+    }
+
     pub fn visit_it_reference(&mut self, it_ref: ast::ItReferenceNode) -> VariableTypes {
         let scope = self.program_state.get_scope();
         let sub_scope = scope.get_variable("IT".to_string());
@@ -1075,7 +1126,7 @@ impl<'a> Visitor<'a> {
         let type_ = match var_decl.type_.token.token.to_name().as_str() {
             "Word_NUMBER" => VariableTypes::Number,
             "Word_NUMBAR" => VariableTypes::Numbar,
-            "Word_YARN" => VariableTypes::Yarn,
+            "Word_YARN" => VariableTypes::Yarn(false),
             "Word_TROOF" => VariableTypes::Troof,
             _ => {
                 panic!("Unexpected type");
@@ -1166,7 +1217,7 @@ impl<'a> Visitor<'a> {
             let type_ = match var_dec.type_.token.token.to_name().as_str() {
                 "Word_NUMBER" => VariableTypes::Number,
                 "Word_NUMBAR" => VariableTypes::Numbar,
-                "Word_YARN" => VariableTypes::Yarn,
+                "Word_YARN" => VariableTypes::Yarn(false),
                 "Word_TROOF" => VariableTypes::Troof,
                 _ => {
                     panic!("Unexpected type");
