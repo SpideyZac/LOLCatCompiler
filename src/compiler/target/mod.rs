@@ -33,6 +33,9 @@ pub trait Target {
     fn f_copy(&self) -> String;
     fn mov(&self) -> String;
 
+    fn hook(&self, index: i32) -> String;
+    fn ref_hook(&self, index: i32) -> String;
+
     fn fn_header(&self, name: String) -> String;
     fn fn_definition(&self, name: String, body: String) -> String;
     fn call_fn(&self, name: String) -> String;

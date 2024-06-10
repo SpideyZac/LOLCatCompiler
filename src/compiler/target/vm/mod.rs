@@ -114,6 +114,14 @@ impl Target for VM {
         String::from("machine_mov(vm);\n")
     }
 
+    fn hook(&self, index: i32) -> String {
+        format!("machine_hook(vm, {});\n", index)
+    }
+
+    fn ref_hook(&self, index: i32) -> String {
+        format!("machine_ref_hook(vm, {});\n", index)
+    }
+
     fn fn_header(&self, name: String) -> String {
         format!("void {}(machine* vm);\n", name)
     }

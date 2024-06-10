@@ -7,6 +7,7 @@ typedef struct machine {
     float* stack;
     char*  heap;
     bool*  allocated;
+    int    hooks;
     int    stack_size;
     int    heap_size;
     int    stack_pointer;
@@ -58,6 +59,7 @@ machine *machine_new(int stack_size, int heap_size) {
     result->allocated  = malloc(sizeof(bool)  * heap_size);
     result->return_register = 0;
     result->stack_pointer = 0;
+    result->hooks = 0;
 
     for (int i = 0; i < stack_size; i++) {
         result->stack[i] = 0;
@@ -195,19 +197,27 @@ void machine_load(machine *vm, int floats) {
 void machine_copy(machine *vm) {
     int offset = machine_pop(vm);
 
-    machine_push(vm, vm->stack[vm->base_ptr - offset]);
+    machine_push(vm, vm->stack[offset]);
 }
 
 void machine_mov(machine *vm) {
     int offset = machine_pop(vm);
     float value = machine_pop(vm);
 
-    vm->stack[vm->base_ptr - offset] = value;
+    vm->stack[offset] = value;
     // print stack
-    // for (int i = 0; i < vm->stack_pointer; i++) {
-    //     printf("%f\n", vm->stack[i]);
-    // }
-    // printf("\n");
+    for (int i = 0; i < vm->stack_pointer; i++) {
+        printf("%f\n", vm->stack[i]);
+    }
+    printf("\n");
+}
+
+void machine_hook(machine *vm, int hook) {
+    vm->stack[hook] = vm->stack_pointer - 1;
+}
+
+void machine_ref_hook(machine *vm, int hook) {
+    machine_push(vm, vm->stack[hook]);
 }
 
 void machine_add(machine *vm) {

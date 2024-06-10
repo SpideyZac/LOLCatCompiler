@@ -15,6 +15,8 @@ pub enum IRStatement {
     Load(i32),
     Copy,
     Mov,
+    Hook(i32),
+    RefHook(i32),
     Call(String),
     CallForeign(String),
     BeginWhile,
@@ -43,6 +45,8 @@ impl IRStatement {
             IRStatement::Load(floats) => target.load(*floats),
             IRStatement::Copy => target.f_copy(),
             IRStatement::Mov => target.mov(),
+            IRStatement::Hook(index) => target.hook(*index),
+            IRStatement::RefHook(index) => target.ref_hook(*index),
             IRStatement::Call(name) => target.call_fn(name.clone()),
             IRStatement::CallForeign(name) => target.call_foreign_fn(name.clone()),
             IRStatement::BeginWhile => target.begin_while(),
@@ -102,7 +106,7 @@ impl IRFunctionEntry {
         }
     }
 
-    pub fn assemble(&self, target: &impl Target) -> String {
+    pub fn assemble(&self, target: &impl Target, hooks: i32) -> String {
         let mut code = String::new();
         let mut body = String::new();
 
@@ -114,6 +118,9 @@ impl IRFunctionEntry {
 
         code.push_str(&target.begin_entry_point(self.stack_size, self.heap_size));
         // we don't need a return address as end_stack_frame is never called in entry
+        for _ in 0..hooks {
+            code.push_str(&target.push(0.0));
+        }
         code.push_str(&target.establish_stack_frame());
         code.push_str(&body);
         code.push_str(&target.end_entry_point());
@@ -133,7 +140,7 @@ impl IR {
         IR { functions, entry }
     }
 
-    pub fn assemble(&self, target: &impl Target) -> String {
+    pub fn assemble(&self, target: &impl Target, hooks: i32) -> String {
         let mut code = String::new();
         code.push_str(&target.core_prelude());
         if target.is_standard() {
@@ -146,7 +153,7 @@ impl IR {
             code.push_str(&assembly);
         }
 
-        let entry = self.entry.assemble(target);
+        let entry = self.entry.assemble(target, hooks);
 
         code.push_str(&entry);
         code.push_str(&target.core_postlude());
