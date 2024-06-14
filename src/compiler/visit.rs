@@ -436,6 +436,30 @@ impl<'a> Visitor<'a> {
             ast::ExpressionNodeValueOption::SmallrExpression(smallr_expr) => {
                 self.visit_smallr_expression(smallr_expr.clone())
             }
+            ast::ExpressionNodeValueOption::BothOfExpression(both_of_expr) => {
+                self.visit_both_of_expression(both_of_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::EitherOfExpression(either_of_expr) => {
+                self.visit_either_of_expression(either_of_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::WonOfExpression(won_of_expr) => {
+                self.visit_won_of_expression(won_of_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::NotExpression(not_expr) => {
+                self.visit_not_expression(not_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::AllOfExpression(all_of_expr) => {
+                self.visit_all_of_expression(all_of_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::AnyOfExpression(any_of_expr) => {
+                self.visit_any_of_expression(any_of_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::BothSaemExpression(both_saem_expr) => {
+                self.visit_both_saem_expression(both_saem_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::DiffrintExpression(diffrint_expr) => {
+                self.visit_diffrint_expression(diffrint_expr.clone())
+            }
             _ => {
                 panic!("Unexpected expression");
             }
@@ -852,6 +876,446 @@ impl<'a> Visitor<'a> {
         let variable = VariableValue::new(hook, Types::Troof);
 
         (variable, left_token)
+    }
+
+    pub fn visit_both_of_expression(
+        &mut self,
+        both_of_expr: ast::BothOfExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(0.0)]); // return value
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let (left, left_token) = self.visit_expression(*both_of_expr.left.clone());
+        let (right, right_token) = self.visit_expression(*both_of_expr.right.clone());
+
+        self.free_hook(left.hook);
+        self.free_hook(right.hook);
+
+        if !left.type_.equals(&Types::Troof) {
+            self.errors.push(VisitorError {
+                message: "Expected TROOF type".to_string(),
+                token: left_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), left_token);
+        }
+
+        if !right.type_.equals(&Types::Troof) {
+            self.errors.push(VisitorError {
+                message: "Expected TROOF type".to_string(),
+                token: right_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), right_token);
+        }
+
+        self.add_statements(vec![
+            ir::IRStatement::Multiply,
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(1.0),
+            ir::IRStatement::RefHook(hook),
+            ir::IRStatement::Mov,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+        ]);
+
+        let variable = VariableValue::new(hook, Types::Troof);
+        (variable, left_token)
+    }
+
+    pub fn visit_either_of_expression(
+        &mut self,
+        either_of_expr: ast::EitherOfExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        let (left, left_token) = self.visit_expression(*either_of_expr.left.clone());
+        let (right, right_token) = self.visit_expression(*either_of_expr.right.clone());
+
+        self.free_hook(left.hook);
+        self.free_hook(right.hook);
+
+        if !left.type_.equals(&Types::Troof) {
+            self.errors.push(VisitorError {
+                message: "Expected TROOF type".to_string(),
+                token: left_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), left_token);
+        }
+
+        if !right.type_.equals(&Types::Troof) {
+            self.errors.push(VisitorError {
+                message: "Expected TROOF type".to_string(),
+                token: right_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), right_token);
+        }
+
+        self.add_statements(vec![ir::IRStatement::Add]);
+
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let variable = VariableValue::new(hook, Types::Troof);
+        (variable, left_token)
+    }
+
+    pub fn visit_won_of_expression(
+        &mut self,
+        won_of_expr: ast::WonOfExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(0.0)]); // return value
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let (left, left_token) = self.visit_expression(*won_of_expr.left.clone());
+        let (right, right_token) = self.visit_expression(*won_of_expr.right.clone());
+
+        self.free_hook(left.hook);
+        self.free_hook(right.hook);
+
+        if !left.type_.equals(&Types::Troof) {
+            self.errors.push(VisitorError {
+                message: "Expected TROOF type".to_string(),
+                token: left_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), left_token);
+        }
+
+        if !right.type_.equals(&Types::Troof) {
+            self.errors.push(VisitorError {
+                message: "Expected TROOF type".to_string(),
+                token: right_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), right_token);
+        }
+
+        self.add_statements(vec![
+            ir::IRStatement::Add,
+            ir::IRStatement::Push(2.0),
+            ir::IRStatement::Modulo,
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(1.0),
+            ir::IRStatement::RefHook(hook),
+            ir::IRStatement::Mov,
+            ir::IRStatement::Push(0.0), // break out of loop
+            ir::IRStatement::EndWhile,
+        ]);
+
+        let variable = VariableValue::new(hook, Types::Troof);
+        (variable, left_token)
+    }
+
+    pub fn visit_not_expression(
+        &mut self,
+        not_expr: ast::NotExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        let (expression, token) = self.visit_expression(*not_expr.expression.clone());
+
+        self.free_hook(expression.hook);
+
+        if !expression.type_.equals(&Types::Troof) {
+            self.errors.push(VisitorError {
+                message: "Expected TROOF type".to_string(),
+                token: token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), token);
+        }
+
+        self.add_statements(vec![
+            ir::IRStatement::Push(1.0),
+            ir::IRStatement::Add,
+            ir::IRStatement::Push(2.0),
+            ir::IRStatement::Modulo,
+        ]);
+
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let variable = VariableValue::new(hook, Types::Troof);
+
+        (variable, token)
+    }
+
+    pub fn visit_all_of_expression(
+        &mut self,
+        all_of_expr: ast::AllOfExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(1.0)]); // return value
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let mut t = None;
+        self.add_statements(vec![ir::IRStatement::Push(1.0)]);
+        for expression in all_of_expr.expressions.iter() {
+            let (exp, token) = self.visit_expression(expression.clone());
+
+            self.free_hook(exp.hook);
+
+            if !exp.type_.equals(&Types::Troof) {
+                self.errors.push(VisitorError {
+                    message: "Expected TROOF type".to_string(),
+                    token: token.clone(),
+                });
+                return (VariableValue::new(-1, Types::Noob), token);
+            }
+            t = Some(token);
+
+            self.add_statements(vec![ir::IRStatement::Multiply]);
+            let (hook_of_running_total, stmt) = self.get_hook();
+            self.add_statements(vec![stmt]);
+
+            self.add_statements(vec![
+                ir::IRStatement::RefHook(hook_of_running_total),
+                ir::IRStatement::Copy,
+                ir::IRStatement::Push(1.0),
+                ir::IRStatement::Add,
+                ir::IRStatement::Push(2.0),
+                ir::IRStatement::Modulo,
+                ir::IRStatement::BeginWhile,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::RefHook(hook),
+                ir::IRStatement::Mov,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::EndWhile,
+            ]);
+
+            self.free_hook(hook_of_running_total);
+        }
+
+        self.add_statements(vec![
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+        ]);
+
+        (VariableValue::new(hook, Types::Troof), t.unwrap())
+    }
+
+    pub fn visit_any_of_expression(
+        &mut self,
+        any_of_expr: ast::AnyOfExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(0.0)]); // return value
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let mut t = None;
+        for expression in any_of_expr.expressions.iter() {
+            let (exp, token) = self.visit_expression(expression.clone());
+
+            self.free_hook(exp.hook);
+
+            if !exp.type_.equals(&Types::Troof) {
+                self.errors.push(VisitorError {
+                    message: "Expected TROOF type".to_string(),
+                    token: token.clone(),
+                });
+                return (VariableValue::new(-1, Types::Noob), token);
+            }
+            t = Some(token);
+
+            self.add_statements(vec![
+                ir::IRStatement::BeginWhile,
+                ir::IRStatement::Push(1.0),
+                ir::IRStatement::RefHook(hook),
+                ir::IRStatement::Mov,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::EndWhile,
+            ]);
+        }
+
+        (VariableValue::new(hook, Types::Troof), t.unwrap())
+    }
+
+    pub fn visit_both_saem_expression(
+        &mut self,
+        both_saem_expr: ast::BothSaemExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(1.0)]); // return value
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let (left, left_token) = self.visit_expression(*both_saem_expr.left.clone());
+        let (right, right_token) = self.visit_expression(*both_saem_expr.right.clone());
+
+        if !left.type_.equals(&right.type_) {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} type but got {}",
+                    left.type_.to_string(),
+                    right.type_.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), right_token);
+        }
+
+        match left.type_ {
+            Types::Number | Types::Numbar | Types::Troof => {
+                self.add_statements(vec![
+                    ir::IRStatement::Subtract,
+                    ir::IRStatement::BeginWhile,
+                    ir::IRStatement::Push(0.0),
+                    ir::IRStatement::RefHook(hook),
+                    ir::IRStatement::Mov,
+                    ir::IRStatement::Push(0.0),
+                    ir::IRStatement::EndWhile,
+                ]);
+            }
+            Types::Yarn(size) => match right.type_ {
+                Types::Yarn(size2) => {
+                    if size != size2 {
+                        self.add_statements(vec![
+                            ir::IRStatement::Push(0.0),
+                            ir::IRStatement::RefHook(hook),
+                            ir::IRStatement::Mov,
+                        ]);
+                    } else {
+                        for i in 0..size {
+                            self.add_statements(vec![
+                                ir::IRStatement::RefHook(left.hook),
+                                ir::IRStatement::Copy,
+                                ir::IRStatement::Push(i as f32),
+                                ir::IRStatement::Add,
+                                ir::IRStatement::Load(1),
+                                ir::IRStatement::RefHook(right.hook),
+                                ir::IRStatement::Copy,
+                                ir::IRStatement::Push(i as f32),
+                                ir::IRStatement::Add,
+                                ir::IRStatement::Load(1),
+                                ir::IRStatement::Subtract,
+                                ir::IRStatement::BeginWhile,
+                                ir::IRStatement::Push(0.0),
+                                ir::IRStatement::RefHook(hook),
+                                ir::IRStatement::Mov,
+                                ir::IRStatement::Push(0.0),
+                                ir::IRStatement::EndWhile,
+                            ]);
+                        }
+
+                        self.add_statements(vec![
+                            ir::IRStatement::BeginWhile,
+                            ir::IRStatement::Push(0.0),
+                            ir::IRStatement::EndWhile,
+                            ir::IRStatement::BeginWhile,
+                            ir::IRStatement::Push(0.0),
+                            ir::IRStatement::EndWhile,
+                        ]);
+                    }
+                }
+                _ => {
+                    panic!("Unexpected type");
+                }
+            },
+            _ => {
+                panic!("Unexpected type");
+            }
+        };
+
+        self.free_hook(left.hook);
+        self.free_hook(right.hook);
+
+        (VariableValue::new(hook, Types::Troof), left_token)
+    }
+
+    pub fn visit_diffrint_expression(
+        &mut self,
+        diffrint_expr: ast::DiffrintExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        self.add_statements(vec![ir::IRStatement::Push(1.0)]); // return value
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let (left, left_token) = self.visit_expression(*diffrint_expr.left.clone());
+        let (right, right_token) = self.visit_expression(*diffrint_expr.right.clone());
+
+        if !left.type_.equals(&right.type_) {
+            self.errors.push(VisitorError {
+                message: format!(
+                    "Expected {} type but got {}",
+                    left.type_.to_string(),
+                    right.type_.to_string()
+                ),
+                token: right_token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), right_token);
+        }
+
+        match left.type_ {
+            Types::Number | Types::Numbar | Types::Troof => {
+                self.add_statements(vec![
+                    ir::IRStatement::Subtract,
+                    ir::IRStatement::BeginWhile,
+                    ir::IRStatement::Push(0.0),
+                    ir::IRStatement::RefHook(hook),
+                    ir::IRStatement::Mov,
+                    ir::IRStatement::Push(0.0),
+                    ir::IRStatement::EndWhile,
+                ]);
+            }
+            Types::Yarn(size) => match right.type_ {
+                Types::Yarn(size2) => {
+                    if size != size2 {
+                        self.add_statements(vec![
+                            ir::IRStatement::Push(0.0),
+                            ir::IRStatement::RefHook(hook),
+                            ir::IRStatement::Mov,
+                        ]);
+                    } else {
+                        for i in 0..size {
+                            self.add_statements(vec![
+                                ir::IRStatement::RefHook(left.hook),
+                                ir::IRStatement::Copy,
+                                ir::IRStatement::Push(i as f32),
+                                ir::IRStatement::Add,
+                                ir::IRStatement::Load(1),
+                                ir::IRStatement::RefHook(right.hook),
+                                ir::IRStatement::Copy,
+                                ir::IRStatement::Push(i as f32),
+                                ir::IRStatement::Add,
+                                ir::IRStatement::Load(1),
+                                ir::IRStatement::Subtract,
+                                ir::IRStatement::BeginWhile,
+                                ir::IRStatement::Push(0.0),
+                                ir::IRStatement::RefHook(hook),
+                                ir::IRStatement::Mov,
+                                ir::IRStatement::Push(0.0),
+                                ir::IRStatement::EndWhile,
+                            ]);
+                        }
+
+                        self.add_statements(vec![
+                            ir::IRStatement::BeginWhile,
+                            ir::IRStatement::Push(0.0),
+                            ir::IRStatement::EndWhile,
+                            ir::IRStatement::BeginWhile,
+                            ir::IRStatement::Push(0.0),
+                            ir::IRStatement::EndWhile,
+                        ]);
+                    }
+                }
+                _ => {
+                    panic!("Unexpected type");
+                }
+            },
+            _ => {
+                panic!("Unexpected type");
+            }
+        };
+
+        self.free_hook(left.hook);
+        self.free_hook(right.hook);
+
+        self.add_statements(vec![
+            ir::IRStatement::RefHook(hook),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Push(1.0),
+            ir::IRStatement::Add,
+            ir::IRStatement::Push(2.0),
+            ir::IRStatement::Modulo,
+            ir::IRStatement::RefHook(hook),
+            ir::IRStatement::Mov,
+        ]);
+
+        (VariableValue::new(hook, Types::Troof), left_token)
     }
 
     pub fn visit_variable_declaration(&mut self, var_dec: ast::VariableDeclarationStatementNode) {

@@ -56,7 +56,7 @@ machine *machine_new(int stack_size, int heap_size) {
     result->heap_size  = heap_size;
     result->stack      = malloc(sizeof(float) * stack_size);
     result->heap       = malloc(sizeof(char)  * heap_size);
-    result->allocated  = malloc(sizeof(bool)  * heap_size);
+    result->allocated  = malloc(sizeof(bool)  * heap_size / 4); // 4 bytes per float
     result->return_register = 0;
     result->stack_pointer = 0;
     result->hooks = 0;
@@ -166,7 +166,7 @@ float bytes2Float(unsigned char bytes_temp[4]) {
 }
 
 void machine_store(machine *vm, int floats) {
-    int addr = machine_pop(vm);
+    int addr = machine_pop(vm) * 4;
 
     // store value in heap by breaking it into bytes
     for (int i = floats - 1; i >= 0; i--) {
@@ -182,7 +182,7 @@ void machine_store(machine *vm, int floats) {
 }
 
 void machine_load(machine *vm, int floats) {
-    int addr = machine_pop(vm);
+    int addr = machine_pop(vm) * 4;
 
     // load value from heap by combining bytes
     for (int i = 0; i < floats; i++) {
