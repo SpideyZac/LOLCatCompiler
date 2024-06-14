@@ -802,7 +802,7 @@ impl<'a> Visitor<'a> {
         self.free_hook(left.hook);
         self.free_hook(right.hook);
 
-        let variable = VariableValue::new(hook, Types::Troof);
+        let variable = VariableValue::new(hook, left.type_.clone());
 
         (variable, left_token)
     }
@@ -873,7 +873,7 @@ impl<'a> Visitor<'a> {
         self.free_hook(left.hook);
         self.free_hook(right.hook);
 
-        let variable = VariableValue::new(hook, Types::Troof);
+        let variable = VariableValue::new(hook, left.type_.clone());
 
         (variable, left_token)
     }
