@@ -460,6 +460,9 @@ impl<'a> Visitor<'a> {
             ast::ExpressionNodeValueOption::DiffrintExpression(diffrint_expr) => {
                 self.visit_diffrint_expression(diffrint_expr.clone())
             }
+            ast::ExpressionNodeValueOption::ItReference(it_ref) => {
+                self.visit_it_reference(it_ref.clone())
+            }
             _ => {
                 panic!("Unexpected expression");
             }
@@ -1316,6 +1319,37 @@ impl<'a> Visitor<'a> {
         ]);
 
         (VariableValue::new(hook, Types::Troof), left_token)
+    }
+
+    pub fn visit_it_reference(
+        &mut self,
+        it_ref: ast::ItReferenceNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let scope = self.get_scope();
+        let variable = scope.get_variable("IT");
+        if let None = variable {
+            self.errors.push(VisitorError {
+                message: "IT variable not declared".to_string(),
+                token: it_ref.token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), it_ref.token);
+        }
+        let variable = variable.unwrap();
+
+        if variable.value.type_.equals(&Types::Noob) {
+            self.errors.push(VisitorError {
+                message: "IT variable not initialized".to_string(),
+                token: it_ref.token.clone(),
+            });
+            return (VariableValue::new(-1, Types::Noob), it_ref.token);
+        }
+        let (var, stmts) = variable.copy(hook);
+        self.add_statements(stmts);
+
+        (var, it_ref.token)
     }
 
     pub fn visit_variable_declaration(&mut self, var_dec: ast::VariableDeclarationStatementNode) {
