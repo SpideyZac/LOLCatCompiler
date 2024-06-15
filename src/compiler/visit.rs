@@ -61,6 +61,20 @@ impl VariableValue {
     pub fn new(hook: i32, type_: Types) -> VariableValue {
         VariableValue { hook, type_ }
     }
+
+    pub fn free(&self) -> Vec<ir::IRStatement> {
+        match self.type_ {
+            Types::Yarn(size) => {
+                vec![
+                    ir::IRStatement::Push(size as f32),
+                    ir::IRStatement::RefHook(self.hook),
+                    ir::IRStatement::Copy,
+                    ir::IRStatement::Free,
+                ]
+            }
+            _ => vec![],
+        }
+    }
 }
 
 pub struct VariableData {
@@ -415,6 +429,9 @@ impl<'a> Visitor<'a> {
                 self.visit_troof_value(troof.clone())
             }
             ast::ExpressionNodeValueOption::YarnValue(yarn) => self.visit_yarn_value(yarn.clone()),
+            ast::ExpressionNodeValueOption::VariableReference(var_ref) => {
+                self.visit_variable_reference(var_ref.clone())
+            }
             ast::ExpressionNodeValueOption::SumExpression(sum_expr) => {
                 self.visit_sum_expression(sum_expr.clone())
             }
@@ -459,6 +476,9 @@ impl<'a> Visitor<'a> {
             }
             ast::ExpressionNodeValueOption::DiffrintExpression(diffrint_expr) => {
                 self.visit_diffrint_expression(diffrint_expr.clone())
+            }
+            ast::ExpressionNodeValueOption::SmooshExpression(smoosh_expr) => {
+                self.visit_smoosh_expression(smoosh_expr.clone())
             }
             ast::ExpressionNodeValueOption::ItReference(it_ref) => {
                 self.visit_it_reference(it_ref.clone())
@@ -539,6 +559,35 @@ impl<'a> Visitor<'a> {
         let variable = VariableValue::new(hook, Types::Yarn(size));
 
         (variable, yarn.token)
+    }
+
+    pub fn visit_variable_reference(
+        &mut self,
+        var_ref: ast::VariableReferenceNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        let name = match var_ref.identifier.value() {
+            tokens::Token::Identifier(name) => name,
+            _ => panic!("Expected Identifier token"),
+        };
+
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        let variable = self.get_scope().get_variable(name);
+        if let None = variable {
+            self.errors.push(VisitorError {
+                message: format!("Variable {} not found", name),
+                token: var_ref.identifier.clone(),
+            });
+            return (
+                VariableValue::new(-1, Types::Noob),
+                var_ref.identifier.clone(),
+            );
+        }
+        let (var, stmts) = variable.unwrap().copy(hook);
+        self.add_statements(stmts);
+
+        (var, var_ref.identifier)
     }
 
     pub fn visit_sum_expression(
@@ -1213,6 +1262,9 @@ impl<'a> Visitor<'a> {
             }
         };
 
+        self.add_statements(left.free());
+        self.add_statements(right.free());
+
         self.free_hook(left.hook);
         self.free_hook(right.hook);
 
@@ -1304,6 +1356,9 @@ impl<'a> Visitor<'a> {
             }
         };
 
+        self.add_statements(left.free());
+        self.add_statements(right.free());
+
         self.free_hook(left.hook);
         self.free_hook(right.hook);
 
@@ -1319,6 +1374,67 @@ impl<'a> Visitor<'a> {
         ]);
 
         (VariableValue::new(hook, Types::Troof), left_token)
+    }
+
+    pub fn visit_smoosh_expression(
+        &mut self,
+        smoosh_expr: ast::SmooshExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        let mut size = 0;
+        let mut token = None;
+
+        for expression in smoosh_expr.expressions.iter() {
+            let (exp, t) = self.visit_expression(expression.clone());
+
+            if !exp.type_.equals(&Types::Yarn(-1)) {
+                self.errors.push(VisitorError {
+                    message: "Expected YARN type".to_string(),
+                    token: t.clone(),
+                });
+                return (VariableValue::new(-1, Types::Noob), t);
+            }
+
+            token = Some(t);
+
+            let size_local = match exp.type_ {
+                Types::Yarn(size) => size,
+                _ => panic!("Unexpected type"),
+            };
+
+            size += size_local;
+
+            self.add_statements(vec![
+                ir::IRStatement::RefHook(exp.hook),
+                ir::IRStatement::Copy,
+                ir::IRStatement::Load(size_local),
+            ]);
+
+            self.add_statements(exp.free());
+
+            self.add_statements(vec![
+                ir::IRStatement::BeginWhile,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::EndWhile,
+            ]);
+
+            self.free_hook(exp.hook);
+        }
+
+        self.add_statements(vec![
+            ir::IRStatement::Push(size as f32),
+            ir::IRStatement::Allocate,
+        ]);
+
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+
+        self.add_statements(vec![
+            ir::IRStatement::RefHook(hook),
+            ir::IRStatement::Copy,
+            ir::IRStatement::Store(size),
+        ]);
+
+        (VariableValue::new(hook, Types::Yarn(size)), token.unwrap())
     }
 
     pub fn visit_it_reference(

@@ -116,7 +116,7 @@ void machine_access_return_register(machine *vm) {
 int machine_allocate(machine *vm) {
     int size = machine_pop(vm), addr = -1, consecutive_free_calls = 0;
 
-    for (int i = 0; i < vm->heap_size; i++) {
+    for (int i = 0; i < vm->heap_size / 4; i++) {
         if (!vm->allocated[i]) consecutive_free_calls++;
         else consecutive_free_calls = 0;
 
