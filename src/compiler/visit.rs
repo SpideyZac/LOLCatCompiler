@@ -480,11 +480,11 @@ impl<'a> Visitor<'a> {
             ast::ExpressionNodeValueOption::SmooshExpression(smoosh_expr) => {
                 self.visit_smoosh_expression(smoosh_expr.clone())
             }
+            ast::ExpressionNodeValueOption::MaekExpression(maek_expr) => {
+                self.visit_maek_expression(maek_expr.clone())
+            }
             ast::ExpressionNodeValueOption::ItReference(it_ref) => {
                 self.visit_it_reference(it_ref.clone())
-            }
-            _ => {
-                panic!("Unexpected expression");
             }
         }
     }
@@ -1435,6 +1435,171 @@ impl<'a> Visitor<'a> {
         ]);
 
         (VariableValue::new(hook, Types::Yarn(size)), token.unwrap())
+    }
+
+    pub fn visit_maek_expression(
+        &mut self,
+        maek_expr: ast::MaekExpressionNode,
+    ) -> (VariableValue, ast::TokenNode) {
+        let (expression, token) = self.visit_expression(*maek_expr.expression.clone());
+
+        self.free_hook(expression.hook);
+
+        let mut type_ = match maek_expr.type_.token.token.to_name().as_str() {
+            "Word_NUMBER" => Types::Number,
+            "Word_NUMBAR" => Types::Numbar,
+            "Word_TROOF" => Types::Troof,
+            "Word_YARN" => Types::Yarn(-1), // unknown size
+            _ => panic!("Unexpected type"),
+        };
+
+        match type_ {
+            Types::Number => {
+                match expression.type_ {
+                    Types::Number => {
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Numbar => {
+                        self.add_statements(vec![ir::IRStatement::CallForeign(
+                            "float_to_int".to_string(),
+                        )]);
+                    }
+                    Types::Troof => {
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Yarn(size) => {
+                        self.add_statements(vec![
+                            ir::IRStatement::Push(size as f32),
+                            ir::IRStatement::CallForeign("string_to_int".to_string()),
+                        ]);
+                    }
+                    Types::Noob => {
+                        self.errors.push(VisitorError {
+                            message: "Cannot convert type NOOB to NUMBER".to_string(),
+                            token: token.clone(),
+                        });
+                        return (VariableValue::new(-1, Types::Noob), token);
+                    }
+                };
+            }
+            Types::Numbar => {
+                match expression.type_ {
+                    Types::Number => {
+                        self.add_statements(vec![ir::IRStatement::CallForeign(
+                            "int_to_float".to_string(),
+                        )]);
+                    }
+                    Types::Numbar => {
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Troof => {
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Yarn(size) => {
+                        self.add_statements(vec![
+                            ir::IRStatement::Push(size as f32),
+                            ir::IRStatement::CallForeign("string_to_float".to_string()),
+                        ]);
+                    }
+                    Types::Noob => {
+                        self.errors.push(VisitorError {
+                            message: "Cannot convert type NOOB to NUMBAR".to_string(),
+                            token: token.clone(),
+                        });
+                        return (VariableValue::new(-1, Types::Noob), token);
+                    }
+                };
+            }
+            Types::Troof => {
+                match expression.type_ {
+                    Types::Number => {
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Numbar => {
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Troof => {
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Yarn(size) => {
+                        self.add_statements(vec![ir::IRStatement::Push(if size == 0 {
+                            0.0
+                        } else {
+                            1.0
+                        })]);
+                    }
+                    Types::Noob => {
+                        self.errors.push(VisitorError {
+                            message: "Cannot convert type NOOB to TROOF".to_string(),
+                            token: token.clone(),
+                        });
+                        return (VariableValue::new(-1, Types::Noob), token);
+                    }
+                };
+            }
+            Types::Yarn(_) => {
+                match expression.type_ {
+                    Types::Number => {
+                        type_ = Types::Yarn(32);
+                        self.add_statements(vec![ir::IRStatement::CallForeign(
+                            "int_to_string".to_string(),
+                        )]);
+                    }
+                    Types::Numbar => {
+                        type_ = Types::Yarn(32);
+                        self.add_statements(vec![ir::IRStatement::CallForeign(
+                            "float_to_string".to_string(),
+                        )]);
+                    }
+                    Types::Troof => {
+                        type_ = Types::Yarn(32);
+                        self.add_statements(vec![ir::IRStatement::CallForeign(
+                            "int_to_string".to_string(),
+                        )]);
+                    }
+                    Types::Yarn(size) => {
+                        type_ = Types::Yarn(size);
+                        self.add_statements(vec![
+                            ir::IRStatement::RefHook(expression.hook),
+                            ir::IRStatement::Copy,
+                        ]);
+                    }
+                    Types::Noob => {
+                        self.errors.push(VisitorError {
+                            message: "Cannot convert type NOOB to YARN".to_string(),
+                            token: token.clone(),
+                        });
+                        return (VariableValue::new(-1, Types::Noob), token);
+                    }
+                };
+            }
+            _ => panic!("Unexpected type"),
+        }
+
+        let (hook, stmt) = self.get_hook();
+        self.add_statements(vec![stmt]);
+        (VariableValue::new(hook, type_), token)
     }
 
     pub fn visit_it_reference(
