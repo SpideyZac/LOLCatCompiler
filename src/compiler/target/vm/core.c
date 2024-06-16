@@ -56,7 +56,7 @@ machine *machine_new(int stack_size, int heap_size) {
     result->heap_size  = heap_size;
     result->stack      = malloc(sizeof(float) * stack_size);
     result->heap       = malloc(sizeof(char)  * heap_size);
-    result->allocated  = malloc(sizeof(bool)  * heap_size / 4); // 4 bytes per float
+    result->allocated  = malloc(sizeof(bool)  * heap_size);
     result->return_register = 0;
     result->stack_pointer = 0;
     result->hooks = 0;
@@ -114,9 +114,9 @@ void machine_access_return_register(machine *vm) {
 }
 
 int machine_allocate(machine *vm) {
-    int size = machine_pop(vm), addr = -1, consecutive_free_calls = 0;
+    int size = machine_pop(vm) * 4, addr = -1, consecutive_free_calls = 0;
 
-    for (int i = 0; i < vm->heap_size / 4; i++) {
+    for (int i = 0; i < vm->heap_size; i++) {
         if (!vm->allocated[i]) consecutive_free_calls++;
         else consecutive_free_calls = 0;
 
@@ -139,7 +139,7 @@ int machine_allocate(machine *vm) {
 }
 
 void machine_free(machine *vm) {
-    int addr = machine_pop(vm), size = machine_pop(vm);
+    int addr = machine_pop(vm), size = machine_pop(vm) * 4;
 
     for (int i = 0; i < size; i++) {
         vm->allocated[addr + i] = false;
@@ -166,7 +166,7 @@ float bytes2Float(unsigned char bytes_temp[4]) {
 }
 
 void machine_store(machine *vm, int floats) {
-    int addr = machine_pop(vm) * 4;
+    int addr = machine_pop(vm);
 
     // store value in heap by breaking it into bytes
     for (int i = floats - 1; i >= 0; i--) {
@@ -182,7 +182,7 @@ void machine_store(machine *vm, int floats) {
 }
 
 void machine_load(machine *vm, int floats) {
-    int addr = machine_pop(vm) * 4;
+    int addr = machine_pop(vm);
 
     // load value from heap by combining bytes
     for (int i = 0; i < floats; i++) {
