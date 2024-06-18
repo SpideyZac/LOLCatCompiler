@@ -178,3 +178,24 @@ void print_string(machine *vm) {
         machine_pop(vm);
     }
 }
+
+void read_string(machine *vm) {
+    char buffer[256];
+    for (int i = 0; i < 32; i++) {
+        buffer[i] = 0;
+    }
+    if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
+        machine_push(vm, 256);
+        int addr = machine_allocate(vm);
+        for (int i = 0; i < 256; i++) {
+            machine_push(vm, (float)buffer[i]);
+        }
+        machine_push(vm, (float)addr);
+        machine_store(vm, 256);
+    } else {
+        printf("panic: ");
+        printf("cannot read string\n");
+        printf("\n");
+        exit(1);
+    }
+}

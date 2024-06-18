@@ -89,12 +89,16 @@ impl VariableData {
     pub fn free(&self) -> Vec<ir::IRStatement> {
         match self.value.type_ {
             Types::Yarn(size) => {
-                vec![
-                    ir::IRStatement::Push(size as f32),
-                    ir::IRStatement::RefHook(self.value.hook),
-                    ir::IRStatement::Copy,
-                    ir::IRStatement::Free,
-                ]
+                if size >= 0 {
+                    vec![
+                        ir::IRStatement::Push(size as f32),
+                        ir::IRStatement::RefHook(self.value.hook),
+                        ir::IRStatement::Copy,
+                        ir::IRStatement::Free,
+                    ]
+                } else {
+                    vec![]
+                }
             }
             _ => vec![],
         }
@@ -401,9 +405,7 @@ impl<'a> Visitor<'a> {
         match statement.value {
             ast::StatementNodeValueOption::Expression(expression) => {
                 let var = self.get_scope().get_variable("IT").unwrap();
-                if var.value.type_.equals(&Types::Yarn(0)) {
-                    self.add_statements(var.free());
-                }
+                self.add_statements(var.free());
 
                 let (variable_value, _) = self.visit_expression(expression);
                 self.free_hook(variable_value.hook);
@@ -445,6 +447,9 @@ impl<'a> Visitor<'a> {
             }
             ast::StatementNodeValueOption::VisibleStatement(visible_stmt) => {
                 self.visit_visible_statement(visible_stmt);
+            }
+            ast::StatementNodeValueOption::GimmehStatement(gimmeh_stmt) => {
+                self.visit_gimmeh_statement(gimmeh_stmt);
             }
             _ => {
                 panic!("Unexpected statement");
@@ -1756,6 +1761,8 @@ impl<'a> Visitor<'a> {
                     return;
                 }
 
+                self.add_statements(variable.unwrap().free());
+
                 let scope_mut = self.get_scope_mut();
                 let variable_mut = scope_mut.get_variable_mut(&name).unwrap();
                 let stmts = variable_mut.assign(&expression.type_);
@@ -1797,6 +1804,8 @@ impl<'a> Visitor<'a> {
                     return;
                 }
 
+                self.add_statements(variable.unwrap().free());
+
                 let scope_mut = self.get_scope_mut();
                 let variable_mut = scope_mut.get_variable_mut(&name).unwrap();
                 let stmts = variable_mut.assign(&expression.type_);
@@ -1815,6 +1824,8 @@ impl<'a> Visitor<'a> {
         match expr.type_ {
             Types::Yarn(size) => {
                 self.add_statements(vec![
+                    ir::IRStatement::RefHook(expr.hook),
+                    ir::IRStatement::Copy,
                     ir::IRStatement::Push(size as f32),
                     ir::IRStatement::CallForeign("print_string".to_string()),
                 ]);
@@ -1825,5 +1836,46 @@ impl<'a> Visitor<'a> {
         if let None = visible.exclamation {
             self.add_statements(vec![ir::IRStatement::CallForeign("prend".to_string())]);
         }
+
+        self.add_statements(expr.free());
+    }
+
+    pub fn visit_gimmeh_statement(&mut self, gimmeh: ast::GimmehStatementNode) {
+        let token = gimmeh.identifier;
+        let name = match token.value() {
+            tokens::Token::Identifier(name) => name,
+            _ => panic!("Expected Identifier token"),
+        };
+
+        let scope = self.get_scope();
+        let variable = scope.get_variable(&name);
+        if let None = variable {
+            self.errors.push(VisitorError {
+                message: format!("Variable {} not declared", name),
+                token,
+            });
+            return;
+        }
+
+        let variable = variable.unwrap();
+
+        if !variable.value.type_.equals(&Types::Yarn(-1)) {
+            self.errors.push(VisitorError {
+                message: format!("Variable {} is not of type YARN", name),
+                token,
+            });
+            return;
+        }
+
+        self.add_statements(variable.free());
+
+        self.add_statements(vec![ir::IRStatement::CallForeign(
+            "read_string".to_string(),
+        )]);
+
+        let scope_mut = self.get_scope_mut();
+        let variable_mut = scope_mut.get_variable_mut(&name).unwrap();
+        let stmts = variable_mut.assign(&variable_mut.value.type_.clone());
+        self.add_statements(stmts);
     }
 }

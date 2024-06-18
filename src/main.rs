@@ -13,7 +13,7 @@ use crate::parser::parser as p;
 use crate::utils::get_line;
 
 fn main() {
-    let contents = "HAI 1.2\nI HAS A x ITZ NUMBER R 1\nI HAS A y ITZ NUMBAR R 2.5\nI HAS A z ITZ NUMBER R SUM OF x AN MAEK y A NUMBER\nI HAS A a ITZ YARN R MAEK z A YARN\nVISIBLE a\nKTHXBYE";
+    let contents = "HAI 1.2\nI HAS A x ITZ NUMBER R 1\nI HAS A y ITZ NUMBAR R 2.5\nI HAS A z ITZ NUMBER R SUM OF x AN MAEK y A NUMBER\nI HAS A a ITZ YARN R MAEK z A YARN\nVISIBLE a\nGIMMEH a\nVISIBLE a\nKTHXBYE";
     let lines = contents.split("\n").collect::<Vec<&str>>();
 
     let mut l = l::Lexer::init(contents);
@@ -74,7 +74,7 @@ fn main() {
         return;
     }
 
-    let mut v = v::Visitor::new(p, 100, 400);
+    let mut v = v::Visitor::new(p, 1000, 4000);
     let (ir, errors, hooks) = v.visit();
 
     for error in errors.iter() {

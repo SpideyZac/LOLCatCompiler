@@ -167,6 +167,7 @@ impl Target for VM {
             .args(&["-o", &format!("main{}", EXE_SUFFIX)[..]])
             .args(&["-x", "c", "-"])
             .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
             .spawn();
 
         if let Ok(mut child) = child {
