@@ -166,3 +166,15 @@ void float_to_string(machine *vm) {
     machine_push(vm, (float)addr);
     machine_store(vm, 32);
 }
+
+void print_string(machine *vm) {
+    int size = machine_pop(vm);
+    machine_load(vm, size);
+    for (int i = 0; i < size; i++) {
+        printf("%c", (char)vm->stack[(vm->stack_pointer - size) + i]);
+    }
+    // clear stack
+    for (int i = 0; i < size; i++) {
+        machine_pop(vm);
+    }
+}

@@ -292,6 +292,41 @@ impl<'a> Visitor<'a> {
         }
     }
 
+    pub fn get_statements(&self) -> Vec<ir::IRStatement> {
+        let scope = self.get_scope();
+        let name = scope.name.clone();
+
+        if name == "main" {
+            self.ir.entry.statements.clone()
+        } else {
+            for function in self.ir.functions.iter() {
+                if function.name == name {
+                    return function.statements.clone();
+                }
+            }
+
+            panic!("Function not found");
+        }
+    }
+
+    pub fn set_statements(&mut self, statements: Vec<ir::IRStatement>) {
+        let scope = self.get_scope();
+        let name = scope.name.clone();
+
+        if name == "main" {
+            self.ir.entry.statements = statements;
+        } else {
+            for function in self.ir.functions.iter_mut() {
+                if function.name == name {
+                    function.statements = statements;
+                    return;
+                }
+            }
+
+            panic!("Function not found");
+        }
+    }
+
     pub fn get_hook(&mut self) -> (i32, ir::IRStatement) {
         for hook in 0..self.max_hook {
             if !self.used_hooks.contains(&hook) {
@@ -407,6 +442,9 @@ impl<'a> Visitor<'a> {
             }
             ast::StatementNodeValueOption::KTHXBYEStatement(_) => {
                 self.add_statements(vec![ir::IRStatement::Halt]);
+            }
+            ast::StatementNodeValueOption::VisibleStatement(visible_stmt) => {
+                self.visit_visible_statement(visible_stmt);
             }
             _ => {
                 panic!("Unexpected statement");
@@ -1383,6 +1421,8 @@ impl<'a> Visitor<'a> {
         let mut size = 0;
         let mut token = None;
 
+        let old_scope = self.get_statements();
+
         for expression in smoosh_expr.expressions.iter() {
             let (exp, t) = self.visit_expression(expression.clone());
 
@@ -1402,23 +1442,9 @@ impl<'a> Visitor<'a> {
             };
 
             size += size_local;
-
-            self.add_statements(vec![
-                ir::IRStatement::RefHook(exp.hook),
-                ir::IRStatement::Copy,
-                ir::IRStatement::Load(size_local),
-            ]);
-
-            self.add_statements(exp.free());
-
-            self.add_statements(vec![
-                ir::IRStatement::BeginWhile,
-                ir::IRStatement::Push(0.0),
-                ir::IRStatement::EndWhile,
-            ]);
-
-            self.free_hook(exp.hook);
         }
+
+        self.set_statements(old_scope);
 
         self.add_statements(vec![
             ir::IRStatement::Push(size as f32),
@@ -1427,12 +1453,38 @@ impl<'a> Visitor<'a> {
 
         let (hook, stmt) = self.get_hook();
         self.add_statements(vec![stmt]);
+        let mut size_passed = 0;
 
-        self.add_statements(vec![
-            ir::IRStatement::RefHook(hook),
-            ir::IRStatement::Copy,
-            ir::IRStatement::Store(size),
-        ]);
+        for expression in smoosh_expr.expressions.iter() {
+            let (exp, _) = self.visit_expression(expression.clone());
+
+            let size_local = match exp.type_ {
+                Types::Yarn(size) => size,
+                _ => panic!("Unexpected type"),
+            };
+
+            self.add_statements(vec![
+                ir::IRStatement::RefHook(exp.hook),
+                ir::IRStatement::Copy,
+                ir::IRStatement::Load(size_local),
+                ir::IRStatement::RefHook(hook),
+                ir::IRStatement::Copy,
+                ir::IRStatement::Push(size_passed as f32 * 4.0),
+                ir::IRStatement::Add,
+                ir::IRStatement::Store(size_local),
+            ]);
+
+            self.add_statements(exp.free());
+            self.free_hook(exp.hook);
+
+            self.add_statements(vec![
+                ir::IRStatement::BeginWhile,
+                ir::IRStatement::Push(0.0),
+                ir::IRStatement::EndWhile,
+            ]);
+
+            size_passed += size_local;
+        }
 
         (VariableValue::new(hook, Types::Yarn(size)), token.unwrap())
     }
@@ -1597,6 +1649,8 @@ impl<'a> Visitor<'a> {
             _ => panic!("Unexpected type"),
         }
 
+        self.add_statements(expression.free());
+
         let (hook, stmt) = self.get_hook();
         self.add_statements(vec![stmt]);
         (VariableValue::new(hook, type_), token)
@@ -1748,6 +1802,28 @@ impl<'a> Visitor<'a> {
                 let stmts = variable_mut.assign(&expression.type_);
                 self.add_statements(stmts);
             }
+        }
+    }
+
+    pub fn visit_visible_statement(&mut self, visible: ast::VisibleStatementNode) {
+        let (expr, _) = self.visit_smoosh_expression(ast::SmooshExpressionNode {
+            expressions: visible.expressions.clone(),
+        });
+
+        self.free_hook(expr.hook);
+
+        match expr.type_ {
+            Types::Yarn(size) => {
+                self.add_statements(vec![
+                    ir::IRStatement::Push(size as f32),
+                    ir::IRStatement::CallForeign("print_string".to_string()),
+                ]);
+            }
+            _ => panic!("Unexpected type"),
+        }
+
+        if let None = visible.exclamation {
+            self.add_statements(vec![ir::IRStatement::CallForeign("prend".to_string())]);
         }
     }
 }
