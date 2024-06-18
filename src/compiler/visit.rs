@@ -1713,11 +1713,15 @@ impl<'a> Visitor<'a> {
             "Word_NUMBER" => Types::Number,
             "Word_NUMBAR" => Types::Numbar,
             "Word_TROOF" => Types::Troof,
-            "Word_YARN" => Types::Yarn(-1), // unknown size
+            "Word_YARN" => Types::Yarn(1),
             _ => panic!("Unexpected type"),
         };
 
-        self.add_statements(vec![ir::IRStatement::Push(0.0)]);
+        if type_.equals(&Types::Yarn(1)) {
+            self.add_statements(vec![ir::IRStatement::Push(1.0), ir::IRStatement::Allocate]);
+        } else {
+            self.add_statements(vec![ir::IRStatement::Push(0.0)]);
+        }
 
         let (hook, stmt) = self.get_hook();
         self.add_statements(vec![stmt]);
@@ -1838,6 +1842,11 @@ impl<'a> Visitor<'a> {
         }
 
         self.add_statements(expr.free());
+        self.add_statements(vec![
+            ir::IRStatement::BeginWhile,
+            ir::IRStatement::Push(0.0),
+            ir::IRStatement::EndWhile,
+        ]);
     }
 
     pub fn visit_gimmeh_statement(&mut self, gimmeh: ast::GimmehStatementNode) {
