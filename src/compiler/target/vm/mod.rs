@@ -150,7 +150,7 @@ impl Target for VM {
         String::from("machine_halt(vm);\n")
     }
 
-    fn compile(&self, code: String) -> Result<()> {
+    fn compile(&self, code: String, out_file: Option<String>) -> Result<()> {
         let exe_path = current_exe()?;
         let exe_dir = exe_path.parent().unwrap();
 
@@ -162,9 +162,14 @@ impl Target for VM {
             cc = tcc_path.to_str().unwrap();
         }
 
+        let out_path = match out_file {
+            Some(path) => path,
+            None => format!("main{}", EXE_SUFFIX)[..].to_string(),
+        };
+
         let child = Command::new(cc)
             .arg("-O2")
-            .args(&["-o", &format!("main{}", EXE_SUFFIX)[..]])
+            .args(&["-o", out_path.as_str()])
             .args(&["-x", "c", "-"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

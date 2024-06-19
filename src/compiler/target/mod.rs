@@ -46,5 +46,5 @@ pub trait Target {
 
     fn halt(&self) -> String;
 
-    fn compile(&self, code: String) -> std::io::Result<()>;
+    fn compile(&self, code: String, out_file: Option<String>) -> std::io::Result<()>;
 }

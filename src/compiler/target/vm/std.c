@@ -188,6 +188,10 @@ void read_string(machine *vm) {
         machine_push(vm, 256);
         int addr = machine_allocate(vm);
         for (int i = 0; i < 256; i++) {
+            if (buffer[i] == '\n') {
+                machine_push(vm, 0);
+                continue;
+            }
             machine_push(vm, (float)buffer[i]);
         }
         machine_push(vm, (float)addr);

@@ -3,6 +3,9 @@ pub mod lexer;
 pub mod parser;
 pub mod utils;
 
+use clap::Parser;
+use std::fs;
+
 use compiler::target::Target;
 
 use crate::compiler::target as targ;
@@ -12,8 +15,27 @@ use crate::lexer::tokens as t;
 use crate::parser::parser as p;
 use crate::utils::get_line;
 
+#[derive(Parser)]
+#[command(name = "Lol Cat Compiler")]
+#[command(version = "0.1.0")]
+#[command(about = "A fast and efficient compiler for the LOLCODE programming language.", long_about = None)]
+#[command(author = "SpideyZac")]
+struct Cli {
+    input_file: String,
+    #[arg(short = 'o', long = "output")]
+    output_file: Option<String>,
+}
+
 fn main() {
-    let contents = "HAI 1.2\nI HAS A x ITZ NUMBER R 1\nI HAS A y ITZ NUMBAR R 2.5\nI HAS A z ITZ NUMBER R SUM OF x AN MAEK y A NUMBER\nI HAS A a ITZ YARN R MAEK z A YARN\nVISIBLE a\nGIMMEH a\nVISIBLE a\nI HAS A b ITZ YARN\nGIMMEH b\nKTHXBYE";
+    let cli = Cli::parse();
+
+    let contents = fs::read_to_string(cli.input_file.clone());
+    if let Result::Err(_) = contents {
+        println!("Error: Could not read file '{}'", cli.input_file);
+        std::process::exit(1);
+    }
+    let contents = contents.unwrap();
+    let contents = contents.as_str();
     let lines = contents.split("\n").collect::<Vec<&str>>();
 
     let mut l = l::Lexer::init(contents);
@@ -43,7 +65,7 @@ fn main() {
             }
         }
 
-        return;
+        std::process::exit(1);
     }
 
     let p = p::Parser::parse(tokens);
@@ -71,7 +93,7 @@ fn main() {
             }
         }
 
-        return;
+        std::process::exit(1);
     }
 
     let mut v = v::Visitor::new(p, 1000, 4000);
@@ -94,11 +116,11 @@ fn main() {
         );
     }
     if errors.len() > 0 {
-        return;
+        std::process::exit(1);
     }
 
     let target = targ::vm::VM {};
 
     let asm = ir.assemble(&target, hooks);
-    let _ = target.compile(asm).unwrap();
+    let _ = target.compile(asm, cli.output_file).unwrap();
 }
