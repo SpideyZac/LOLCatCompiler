@@ -1739,9 +1739,6 @@ impl<'a> Visitor<'a> {
                     _ => panic!("Expected Identifier token"),
                 };
 
-                let (expression, t) = self.visit_expression(var_assign.expression.clone());
-                self.free_hook(expression.hook);
-
                 let scope = self.get_scope();
                 let variable = scope.get_variable(&name);
                 if let None = variable {
@@ -1751,6 +1748,14 @@ impl<'a> Visitor<'a> {
                     });
                     return;
                 }
+
+                self.add_statements(variable.unwrap().free());
+
+                let (expression, t) = self.visit_expression(var_assign.expression.clone());
+                self.free_hook(expression.hook);
+
+                let scope = self.get_scope();
+                let variable = scope.get_variable(&name);
 
                 if !expression.type_.equals(&variable.unwrap().value.type_) {
                     self.errors.push(VisitorError {
@@ -1764,8 +1769,6 @@ impl<'a> Visitor<'a> {
                     });
                     return;
                 }
-
-                self.add_statements(variable.unwrap().free());
 
                 let scope_mut = self.get_scope_mut();
                 let variable_mut = scope_mut.get_variable_mut(&name).unwrap();
@@ -1782,9 +1785,6 @@ impl<'a> Visitor<'a> {
                     _ => panic!("Expected Identifier token"),
                 };
 
-                let (expression, t) = self.visit_expression(var_assign.expression.clone());
-                self.free_hook(expression.hook);
-
                 let scope = self.get_scope();
                 let variable = scope.get_variable(&name);
                 if let None = variable {
@@ -1794,6 +1794,14 @@ impl<'a> Visitor<'a> {
                     });
                     return;
                 }
+
+                self.add_statements(variable.unwrap().free());
+
+                let (expression, t) = self.visit_expression(var_assign.expression.clone());
+                self.free_hook(expression.hook);
+
+                let scope = self.get_scope();
+                let variable = scope.get_variable(&name);
 
                 if !expression.type_.equals(&variable.unwrap().value.type_) {
                     self.errors.push(VisitorError {
@@ -1807,8 +1815,6 @@ impl<'a> Visitor<'a> {
                     });
                     return;
                 }
-
-                self.add_statements(variable.unwrap().free());
 
                 let scope_mut = self.get_scope_mut();
                 let variable_mut = scope_mut.get_variable_mut(&name).unwrap();
@@ -1884,7 +1890,7 @@ impl<'a> Visitor<'a> {
 
         let scope_mut = self.get_scope_mut();
         let variable_mut = scope_mut.get_variable_mut(&name).unwrap();
-        let stmts = variable_mut.assign(&variable_mut.value.type_.clone());
+        let stmts = variable_mut.assign(&Types::Yarn(256)); // 256 is the default buffer size
         self.add_statements(stmts);
     }
 }
